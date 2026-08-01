@@ -362,11 +362,11 @@ To pierwszy schemat domenowy; migracja nie przenosi istniejących danych. Przed 
 
 #### Automated
 
-- [x] 4.1 Testy komponentów i pełnego przepływu przechodzą
-- [x] 4.2 Import reprezentatywny trwa krócej niż 5 sekund
-- [x] 4.3 Końcowe kontrole jakości przechodzą
+- [x] 4.1 Testy komponentów i pełnego przepływu przechodzą — a9692aa
+- [x] 4.2 Import reprezentatywny trwa krócej niż 5 sekund — a9692aa
+- [x] 4.3 Końcowe kontrole jakości przechodzą — a9692aa
 
 #### Manual
 
-- [x] 4.4 Właściciel przechodzi od logowania do wyniku
-- [x] 4.5 Wynik i błędy są czytelne na telefonie i desktopie
+- [x] 4.4 Właściciel przechodzi od logowania do wyniku — a9692aa
+- [x] 4.5 Wynik i błędy są czytelne na telefonie i desktopie — a9692aa
