@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { BusinessDay, IChartApi, MouseEventParams, Time } from "lightweight-charts";
 
 interface Point {
   date: string;
@@ -12,6 +13,15 @@ function money(value: number, currency: string) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
 }
 
+function percentage(value: number): string {
+  return new Intl.NumberFormat("pl-PL", {
+    style: "percent",
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+    signDisplay: "exceptZero",
+  }).format(value / 100);
+}
+
 function startDate(range: Range, last: string): string {
   const date = new Date(`${last}T00:00:00Z`);
   if (range === "1M") date.setUTCMonth(date.getUTCMonth() - 1);
@@ -21,25 +31,97 @@ function startDate(range: Range, last: string): string {
   return range === "MAX" ? "0000-01-01" : date.toISOString().slice(0, 10);
 }
 
+function toBusinessDay(date: string): BusinessDay {
+  const [year, month, day] = date.split("-").map(Number);
+  return { year, month, day };
+}
+
+function dateFromTime(time: Time): string {
+  if (typeof time === "string") return time;
+  if (typeof time === "number") return new Date(time * 1000).toISOString().slice(0, 10);
+  return `${time.year}-${String(time.month).padStart(2, "0")}-${String(time.day).padStart(2, "0")}`;
+}
+
 export default function PortfolioHistoryChart({ points, currency }: { points: Point[]; currency: string }) {
+  const container = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
   const [range, setRange] = useState<Range>("MAX");
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const visible = useMemo(() => {
     const from = startDate(range, points.at(-1)?.date ?? "1970-01-01");
-    return points.filter((point) => point.date >= from);
+    return points.filter((point) => point.date >= from && point.netInvestedCapital !== 0);
   }, [points, range]);
-  const width = 1000;
-  const height = 390;
-  const pad = 34;
-  const values = visible.flatMap((point) => [point.totalValue, point.netInvestedCapital]);
-  const min = Math.min(...values, 0);
-  const max = Math.max(...values, 1);
-  const span = Math.max(max - min, 1);
-  const x = (index: number) => pad + (index / Math.max(visible.length - 1, 1)) * (width - pad * 2);
-  const y = (value: number) => height - pad - ((value - min) / span) * (height - pad * 2);
-  const path = (key: "totalValue" | "netInvestedCapital") =>
-    visible.map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(point[key]).toFixed(1)}`).join(" ");
-  const active = visible[selected ?? visible.length - 1];
+  const active = visible.find((point) => point.date === selectedDate) ?? visible.at(-1);
+  const activeReturn = active ? (active.totalProfit / active.netInvestedCapital) * 100 : 0;
+
+  useEffect(() => {
+    const element = container.current;
+    if (!element || visible.length < 2) return;
+    let disposed = false;
+    let observer: ResizeObserver | undefined;
+
+    void import("lightweight-charts").then(({ BaselineSeries, ColorType, CrosshairMode, createChart }) => {
+      if (disposed) return;
+      const chart = createChart(element, {
+        width: element.clientWidth,
+        height: 430,
+        autoSize: false,
+        layout: {
+          background: { type: ColorType.Solid, color: "transparent" },
+          textColor: "#64748b",
+          attributionLogo: false,
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+          fontSize: 13,
+        },
+        grid: {
+          vertLines: { color: "#f1f5f9" },
+          horzLines: { color: "#e2e8f0" },
+        },
+        crosshair: { mode: CrosshairMode.Normal },
+        rightPriceScale: { borderColor: "#cbd5e1", minimumWidth: 72, scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderColor: "#cbd5e1", timeVisible: false, rightOffset: 1, barSpacing: 6 },
+        localization: { locale: "pl-PL" },
+      });
+      chartRef.current = chart;
+      const series = chart.addSeries(BaselineSeries, {
+        baseValue: { type: "price", price: 0 },
+        topLineColor: "#047857",
+        topFillColor1: "rgba(4, 120, 87, 0.24)",
+        topFillColor2: "rgba(4, 120, 87, 0.03)",
+        bottomLineColor: "#b91c1c",
+        bottomFillColor1: "rgba(185, 28, 28, 0.03)",
+        bottomFillColor2: "rgba(185, 28, 28, 0.22)",
+        lineWidth: 3,
+        priceLineVisible: true,
+        priceLineColor: "#64748b",
+        priceLineWidth: 1,
+        lastValueVisible: true,
+        priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+      });
+      series.setData(
+        visible.map((point) => ({
+          time: toBusinessDay(point.date),
+          value: (point.totalProfit / point.netInvestedCapital) * 100,
+        })),
+      );
+      chart.timeScale().fitContent();
+      const move = (event: MouseEventParams) => {
+        setSelectedDate(event.time ? dateFromTime(event.time) : null);
+      };
+      chart.subscribeCrosshairMove(move);
+      observer = new ResizeObserver(() => {
+        chart.applyOptions({ width: element.clientWidth });
+      });
+      observer.observe(element);
+    });
+
+    return () => {
+      disposed = true;
+      observer?.disconnect();
+      chartRef.current?.remove();
+      chartRef.current = null;
+    };
+  }, [visible]);
 
   return (
     <section aria-labelledby="history-chart-title">
@@ -47,19 +129,23 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
         <div>
           <p className="text-sm text-slate-600">
             Stan na{" "}
-            {new Intl.DateTimeFormat("pl-PL", { dateStyle: "long" }).format(new Date(`${active.date}T12:00:00Z`))}
+            {active
+              ? new Intl.DateTimeFormat("pl-PL", { dateStyle: "long" }).format(new Date(`${active.date}T12:00:00Z`))
+              : "brak danych"}
           </p>
           <h2
             id="history-chart-title"
             className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 tabular-nums"
           >
-            {money(active.totalValue, currency)}
+            {active ? money(active.totalValue, currency) : "Brak danych"}
           </h2>
-          <p
-            className={`mt-1 text-sm font-semibold tabular-nums ${active.totalProfit >= 0 ? "text-emerald-700" : "text-red-700"}`}
-          >
-            Wynik: {money(active.totalProfit, currency)}
-          </p>
+          {active && (
+            <p
+              className={`mt-1 text-sm font-semibold tabular-nums ${activeReturn >= 0 ? "text-emerald-700" : "text-red-700"}`}
+            >
+              Wynik: {money(active.totalProfit, currency)} ({percentage(activeReturn)})
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-1" aria-label="Zakres wykresu">
           {(["1M", "6M", "1R", "YTD", "MAX"] as Range[]).map((item) => (
@@ -68,7 +154,7 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
               type="button"
               onClick={() => {
                 setRange(item);
-                setSelected(null);
+                setSelectedDate(null);
               }}
               aria-pressed={range === item}
               className={`min-h-10 rounded-lg px-3 text-sm font-medium ${range === item ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
@@ -81,65 +167,37 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
 
       {visible.length > 1 ? (
         <div className="mt-7">
-          <svg
-            viewBox={`0 0 ${width} ${height}`}
+          <p className="mb-2 text-xs font-medium tracking-wide text-slate-500 uppercase">Stopa zwrotu od początku</p>
+          <div
+            ref={container}
+            className="h-[430px] w-full"
             role="img"
-            aria-label="Wartość portfela i wpłacony kapitał netto w czasie"
-            className="h-auto w-full overflow-visible"
-            onPointerMove={(event) => {
-              const bounds = event.currentTarget.getBoundingClientRect();
-              const relative = (event.clientX - bounds.left) / bounds.width;
-              setSelected(Math.max(0, Math.min(visible.length - 1, Math.round(relative * (visible.length - 1)))));
-            }}
-            onPointerLeave={() => {
-              setSelected(null);
-            }}
-          >
-            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
-              <line
-                key={ratio}
-                x1={pad}
-                x2={width - pad}
-                y1={pad + ratio * (height - pad * 2)}
-                y2={pad + ratio * (height - pad * 2)}
-                stroke="#e2e8f0"
-                strokeWidth="1"
-              />
-            ))}
-            <path d={path("netInvestedCapital")} fill="none" stroke="#94a3b8" strokeWidth="3" strokeDasharray="8 7" />
-            <path
-              d={path("totalValue")}
-              fill="none"
-              stroke="#4338ca"
-              strokeWidth="4"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-            {selected !== null && (
-              <>
-                <line x1={x(selected)} x2={x(selected)} y1={pad} y2={height - pad} stroke="#64748b" strokeWidth="1" />
-                <circle
-                  cx={x(selected)}
-                  cy={y(active.totalValue)}
-                  r="6"
-                  fill="#4338ca"
-                  stroke="white"
-                  strokeWidth="3"
-                />
-              </>
-            )}
-          </svg>
-          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+            aria-label="Interaktywny wykres procentowego wyniku portfela. Zielony obszar oznacza wynik powyżej zera, czerwony poniżej zera."
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600">
             <span className="flex items-center gap-2">
-              <span className="h-1 w-6 rounded bg-indigo-700" /> Wartość portfela
+              <span className="size-2.5 rounded-full bg-emerald-700" /> Zysk, powyżej 0%
             </span>
             <span className="flex items-center gap-2">
-              <span className="w-6 border-t-2 border-dashed border-slate-400" /> Kapitał netto
+              <span className="size-2.5 rounded-full bg-red-700" /> Strata, poniżej 0%
             </span>
+            <span className="text-xs">Oś X: data · Oś Y: wynik procentowy</span>
           </div>
+          <p className="mt-3 text-xs text-slate-500">
+            Wykres wykorzystuje{" "}
+            <a
+              href="https://www.tradingview.com"
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-slate-800"
+            >
+              TradingView Lightweight Charts™
+            </a>
+            .
+          </p>
         </div>
       ) : (
-        <p className="py-16 text-center text-slate-600">Za mało punktów, aby narysować wykres.</p>
+        <p className="py-16 text-center text-slate-600">Za mało danych, aby narysować wykres.</p>
       )}
     </section>
   );
