@@ -32,6 +32,7 @@ export interface PortfolioImportResult {
   simpleReturn: string | null;
   xirr: string | null;
   diagnostics: ImportDiagnostic[];
+  history: { pointsCount: number; unavailableTickers: string[] };
   accounts: { currency: BaseCurrency; products: PortfolioProductResult[] }[];
   externalCashFlows: { date: string; amount: string }[];
 }

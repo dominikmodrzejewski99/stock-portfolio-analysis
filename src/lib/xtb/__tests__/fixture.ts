@@ -106,7 +106,7 @@ export function createWorkbook(options?: {
             options?.cfd ? "-726.94" : "4112.91",
             options?.cfd ? "2591.70" : "0",
           ],
-          [product, "2395604932", "", "", "BUY", "10", "5000", "", "100"],
+          [product, "2395604932", "", "", "BUY", "10", "5000", "", "100", "45600"],
         ]),
   ];
   const closedRows = [
@@ -114,8 +114,22 @@ export function createWorkbook(options?: {
     ["Closed Positions", ""],
     ["Date from (UTC)", "38718"],
     ["Date to (UTC)", "46235.5"],
-    ["Instrument", "Open Time (UTC)", "Close Time (UTC)"],
-    ...(empty ? [["Profit/loss"]] : [["Example ETF", "45600", "45610"]]),
+    [
+      "Instrument",
+      "Ticker",
+      "Category",
+      "Type",
+      "Volume",
+      "Open Price",
+      "Open Time (UTC)",
+      "Close Price",
+      "Close Time (UTC)",
+      "Product",
+      "Position ID",
+    ],
+    ...(empty
+      ? [["Profit/loss"]]
+      : [["Example ETF", "EXAMPLE.PL", "ETF", "BUY", "10", "100", "45600", "110", "45610", product, "300"]]),
   ];
 
   const workbookXml = `<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Closed Positions" sheetId="1" r:id="rId1"/><sheet name="Cash Operations" sheetId="2" r:id="rId2"/><sheet name="Open Positions" sheetId="3" r:id="rId3"/></sheets></workbook>`;

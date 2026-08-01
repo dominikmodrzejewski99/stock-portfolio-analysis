@@ -20,6 +20,7 @@ const result: PortfolioImportResult = {
   simpleReturn: "0.114139",
   xirr: "0.1234",
   diagnostics: [],
+  history: { pointsCount: 0, unavailableTickers: [] },
   accounts: [
     {
       currency: "PLN",

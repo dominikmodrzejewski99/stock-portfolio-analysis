@@ -3,7 +3,8 @@ import { isOwner } from "@/lib/auth";
 import { calculatePortfolio } from "@/lib/portfolio/calculate";
 import { sha256Hex } from "@/lib/portfolio/fingerprint";
 import { NbpClient } from "@/lib/portfolio/nbp-client";
-import { savePortfolioImport } from "@/lib/portfolio/repository";
+import { reconstructHistory } from "@/lib/portfolio/history";
+import { savePortfolioHistory, savePortfolioImport } from "@/lib/portfolio/repository";
 import { createClient } from "@/lib/supabase";
 import { SUPPORTED_CURRENCIES } from "@/lib/xtb/constants";
 import { XtbImportError } from "@/lib/xtb/errors";
@@ -34,6 +35,8 @@ export const POST: APIRoute = async (context) => {
     const calculation = await calculatePortfolio(portfolio, requestedCurrency as PortfolioCurrency, new NbpClient());
     const fingerprint = await sha256Hex(bytes);
     const importId = await savePortfolioImport(supabase, fingerprint, portfolio, calculation);
+    const history = await reconstructHistory(portfolio, calculation);
+    await savePortfolioHistory(supabase, importId, context.locals.user.id, calculation.baseCurrency, history.points);
 
     return Response.json({
       importId,
@@ -52,6 +55,10 @@ export const POST: APIRoute = async (context) => {
       simpleReturn: calculation.simpleReturn?.toString() ?? null,
       xirr: calculation.xirr?.toString() ?? null,
       diagnostics: calculation.diagnostics,
+      history: {
+        pointsCount: history.points.length,
+        unavailableTickers: history.unavailableTickers,
+      },
       accounts: portfolio.accounts.map((account) => ({
         currency: account.currency,
         products: account.snapshots.map((snapshot) => ({

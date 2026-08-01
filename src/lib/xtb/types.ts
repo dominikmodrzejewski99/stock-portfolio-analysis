@@ -34,6 +34,22 @@ export interface XtbOpenPosition {
   sourceRow: number;
 }
 
+export interface XtbPositionLot {
+  accountNumber: string;
+  product: string;
+  instrument: string;
+  ticker: string;
+  category: string;
+  type: string;
+  volume: Decimal;
+  openPrice: Decimal;
+  openAt: string;
+  closePrice: Decimal | null;
+  closeAt: string | null;
+  positionId: string;
+  sourceRow: number;
+}
+
 export interface XtbProductSnapshot {
   accountNumber: string;
   product: string;
@@ -55,6 +71,7 @@ export interface XtbAccountReport {
   isFullHistory: boolean;
   cashOperations: XtbCashOperation[];
   openPositions: XtbOpenPosition[];
+  positionLots: XtbPositionLot[];
   snapshots: XtbProductSnapshot[];
   closedPositionsCount: number;
 }

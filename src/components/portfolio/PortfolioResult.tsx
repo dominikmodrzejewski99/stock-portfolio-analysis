@@ -201,6 +201,35 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
           <p>Liczba przepływów zewnętrznych użytych w audycie: {result.externalCashFlows.length}.</p>
         </div>
       </details>
+
+      {result.history.pointsCount > 0 && (
+        <div className="mt-6 flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold text-slate-950">Historia portfela jest gotowa</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Zapisano {result.history.pointsCount} dziennych punktów wyceny.
+            </p>
+          </div>
+          <a
+            href="/history"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-indigo-700 px-5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700"
+          >
+            Zobacz wykres
+          </a>
+        </div>
+      )}
+      {result.history.unavailableTickers.length > 0 && (
+        <div
+          role="status"
+          className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-950"
+        >
+          <p className="font-semibold">Część starszej historii jest przybliżona</p>
+          <p className="mt-1 leading-6">
+            Źródło notowań nie zwróciło cen dla: {result.history.unavailableTickers.join(", ")}. Okresy, w których te
+            instrumenty były w portfelu, nie zawierają ich wyceny. Ostatni punkt pozostaje zgodny z raportem XTB.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

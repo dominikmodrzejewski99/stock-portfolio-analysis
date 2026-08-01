@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ParsedXtbPortfolio } from "@/lib/xtb/types";
 import { classifyOperation } from "./classify";
 import type { PortfolioCalculation } from "./calculate";
+import type { HistoryPoint } from "./history";
 import { sha256Hex } from "./fingerprint";
 
 export async function savePortfolioImport(
@@ -75,4 +76,28 @@ export async function savePortfolioImport(
     .eq("id", data);
   if (updateError) throw new Error(`Nie udało się zapisać punktu historii: ${updateError.message}`);
   return data;
+}
+
+export async function savePortfolioHistory(
+  client: SupabaseClient,
+  importId: string,
+  ownerId: string,
+  baseCurrency: string,
+  points: HistoryPoint[],
+): Promise<void> {
+  const rows = points.map((point) => ({
+    owner_id: ownerId,
+    import_id: importId,
+    date: point.date,
+    base_currency: baseCurrency,
+    total_value: point.totalValue.toString(),
+    net_invested_capital: point.netInvestedCapital.toString(),
+    total_profit: point.totalProfit.toString(),
+  }));
+  for (let index = 0; index < rows.length; index += 500) {
+    const { error } = await client.from("portfolio_history_points").upsert(rows.slice(index, index + 500), {
+      onConflict: "owner_id,date,base_currency",
+    });
+    if (error) throw new Error(`Nie udało się zapisać historii portfela: ${error.message}`);
+  }
 }

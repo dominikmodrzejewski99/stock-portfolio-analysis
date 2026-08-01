@@ -12,6 +12,7 @@ const { user } = Astro.locals;
       <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
         <a href="/dashboard" class="text-lg font-semibold tracking-tight text-slate-950">MyPortfelik</a>
         <div class="flex items-center gap-4">
+          <a href="/history" class="text-sm font-medium text-slate-700 hover:text-indigo-700">Historia</a>
           <span class="hidden text-sm text-slate-600 sm:inline">{user?.email}</span>
           <form method="POST" action="/api/auth/signout">
             <button

@@ -9,6 +9,7 @@ import type {
   XtbAccountReport,
   XtbCashOperation,
   XtbOpenPosition,
+  XtbPositionLot,
   XtbProductSnapshot,
 } from "./types";
 import { XlsxWorkbook, type SheetRow } from "./workbook";
@@ -128,6 +129,69 @@ function parseOpenPositions(rows: SheetRow[], accountNumber: string, sourceName:
   });
 }
 
+function parseOpenPositionLots(rows: SheetRow[], accountNumber: string, sourceName: string): XtbPositionLot[] {
+  const index = findHeader(rows, OPEN_POSITION_HEADERS, sourceName, "Open Positions");
+  const headers = headerMap(rows[index]);
+  let parent: { product: string; instrument: string; ticker: string; category: string } | null = null;
+  const lots: XtbPositionLot[] = [];
+  for (const row of rows.slice(index + 1)) {
+    const instrumentOrPosition = get(row, headers, "Instrument/Position");
+    if (!instrumentOrPosition) continue;
+    if (!/^\d+(?:\.0+)?$/.test(instrumentOrPosition)) {
+      const ticker = get(row, headers, "Ticker");
+      const category = get(row, headers, "Category");
+      const product = get(row, headers, "Product");
+      if (ticker && category && product) parent = { product, instrument: instrumentOrPosition, ticker, category };
+      continue;
+    }
+    if (!parent) continue;
+    const location = { file: sourceName, sheet: "Open Positions", row: Number(row.__rowNumber) };
+    lots.push({
+      accountNumber,
+      ...parent,
+      type: get(row, headers, "Type"),
+      volume: parseMoney(get(row, headers, "Volume"), location),
+      openPrice: parseMoney(get(row, headers, "Open price"), location),
+      openAt: excelSerialToIso(get(row, headers, "Open time (UTC)"), location),
+      closePrice: null,
+      closeAt: null,
+      positionId: normalizeIdentifier(instrumentOrPosition),
+      sourceRow: Number(row.__rowNumber),
+    });
+  }
+  return lots;
+}
+
+function parseClosedPositionLots(rows: SheetRow[], accountNumber: string, sourceName: string): XtbPositionLot[] {
+  const index = findHeader(rows, ["Instrument", "Open Time (UTC)", "Close Time (UTC)"], sourceName, "Closed Positions");
+  const headers = headerMap(rows[index]);
+  return rows.slice(index + 1).flatMap((row) => {
+    const instrument = get(row, headers, "Instrument");
+    const ticker = get(row, headers, "Ticker");
+    const product = get(row, headers, "Product");
+    const positionId = normalizeIdentifier(get(row, headers, "Position ID"));
+    if (!instrument || instrument === "Profit/loss" || !ticker || !product || !positionId) return [];
+    const location = { file: sourceName, sheet: "Closed Positions", row: Number(row.__rowNumber) };
+    return [
+      {
+        accountNumber,
+        product,
+        instrument,
+        ticker,
+        category: get(row, headers, "Category"),
+        type: get(row, headers, "Type"),
+        volume: parseMoney(get(row, headers, "Volume"), location),
+        openPrice: parseMoney(get(row, headers, "Open Price"), location),
+        openAt: excelSerialToIso(get(row, headers, "Open Time (UTC)"), location),
+        closePrice: parseMoney(get(row, headers, "Close Price"), location),
+        closeAt: excelSerialToIso(get(row, headers, "Close Time (UTC)"), location),
+        positionId,
+        sourceRow: Number(row.__rowNumber),
+      },
+    ];
+  });
+}
+
 function parseSnapshots(
   rows: SheetRow[],
   cashOperations: XtbCashOperation[],
@@ -238,6 +302,7 @@ function parseWorkbook(bytes: Uint8Array, sourceName: string): XtbAccountReport 
   const reportTo = excelSerialToIso(reportToSerial, { file: sourceName, sheet: "Cash Operations" });
   const cashOperations = parseCashOperations(cashRows, accountNumber, sourceName);
   const openPositions = parseOpenPositions(openRows, accountNumber, sourceName);
+  const openPositionLots = parseOpenPositionLots(openRows, accountNumber, sourceName);
   const snapshots = parseSnapshots(openRows, cashOperations, openPositions, accountNumber, sourceName);
   const currency = snapshots[0]?.currency ?? currencyFrom(undefined, "", sourceName);
   const firstOperation = cashOperations.reduce<string | null>(
@@ -246,19 +311,10 @@ function parseWorkbook(bytes: Uint8Array, sourceName: string): XtbAccountReport 
   );
   const isFullHistory = !firstOperation || reportFrom <= firstOperation;
 
-  let closedPositionsCount = 0;
+  let closedPositionLots: XtbPositionLot[] = [];
   if (workbook.sheetNames().includes("Closed Positions")) {
     const closedRows = workbook.rows("Closed Positions");
-    const headerIndex = findHeader(
-      closedRows,
-      ["Instrument", "Open Time (UTC)", "Close Time (UTC)"],
-      sourceName,
-      "Closed Positions",
-    );
-    const headers = headerMap(closedRows[headerIndex]);
-    closedPositionsCount = closedRows
-      .slice(headerIndex + 1)
-      .filter((row) => get(row, headers, "Instrument") && get(row, headers, "Instrument") !== "Profit/loss").length;
+    closedPositionLots = parseClosedPositionLots(closedRows, accountNumber, sourceName);
   }
 
   return {
@@ -270,8 +326,9 @@ function parseWorkbook(bytes: Uint8Array, sourceName: string): XtbAccountReport 
     isFullHistory,
     cashOperations,
     openPositions,
+    positionLots: [...closedPositionLots, ...openPositionLots],
     snapshots,
-    closedPositionsCount,
+    closedPositionsCount: closedPositionLots.length,
   };
 }
 
