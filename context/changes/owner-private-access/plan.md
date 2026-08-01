@@ -230,30 +230,30 @@ Przed wyłączeniem signup należy utworzyć konto właściciela i zachować jeg
 
 #### Automated
 
-- [x] 1.1 Kontrola typów Astro przechodzi
-- [x] 1.2 Lint przechodzi
-- [x] 1.3 Build produkcyjny przechodzi
+- [x] 1.1 Kontrola typów Astro przechodzi — 0a335c0
+- [x] 1.2 Lint przechodzi — 0a335c0
+- [x] 1.3 Build produkcyjny przechodzi — 0a335c0
 
 #### Manual
 
-- [x] 1.4 Niezalogowany użytkownik jest kierowany do logowania
-- [x] 1.5 Obce konto nie może otworzyć dashboardu i zostaje wylogowane
-- [x] 1.6 Właściciel zachowuje dostęp po odświeżeniu
+- [x] 1.4 Niezalogowany użytkownik jest kierowany do logowania — 0a335c0
+- [x] 1.5 Obce konto nie może otworzyć dashboardu i zostaje wylogowane — 0a335c0
+- [x] 1.6 Właściciel zachowuje dostęp po odświeżeniu — 0a335c0
 
 ### Phase 2: Minimalny przepływ logowania
 
 #### Automated
 
-- [ ] 2.1 W kodzie nie pozostają trasy ani odnośniki rejestracji
-- [ ] 2.2 Kontrola typów Astro przechodzi
-- [ ] 2.3 Lint i build przechodzą
+- [x] 2.1 W kodzie nie pozostają trasy ani odnośniki rejestracji
+- [x] 2.2 Kontrola typów Astro przechodzi
+- [x] 2.3 Lint i build przechodzą
 
 #### Manual
 
-- [ ] 2.4 Właściciel loguje się i trafia do dashboardu
-- [ ] 2.5 Błędne dane i obce konto mają ten sam komunikat
-- [ ] 2.6 Rejestracja zwraca 404, a wylogowanie kończy sesję
-- [ ] 2.7 Interfejs działa na wąskim i szerokim ekranie
+- [x] 2.4 Właściciel loguje się i trafia do dashboardu
+- [x] 2.5 Błędne dane i obce konto mają ten sam komunikat
+- [x] 2.6 Rejestracja zwraca 404, a wylogowanie kończy sesję
+- [x] 2.7 Interfejs działa na wąskim i szerokim ekranie
 
 ### Phase 3: Weryfikacja i konfiguracja wdrożenia
 
