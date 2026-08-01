@@ -24,6 +24,9 @@ pnpm-debug.log*
 # local Supabase runtime state
 supabase/.temp/
 
+# private XTB exports placed in the repository root
+/*.zip
+
 # macOS-specific files
 .DS_Store
 
