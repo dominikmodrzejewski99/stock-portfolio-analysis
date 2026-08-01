@@ -62,5 +62,17 @@ export async function savePortfolioImport(
     throw new Error(`Nie udało się zapisać importu portfela: ${detail}`);
   }
   if (typeof data !== "string") throw new Error("Baza nie zwróciła identyfikatora importu.");
+
+  const { error: updateError } = await client
+    .from("portfolio_imports")
+    .update({
+      deposited_capital: calculation.depositedCapital.toString(),
+      withdrawn_capital: calculation.withdrawnCapital.toString(),
+      net_invested_capital: calculation.netInvestedCapital.toString(),
+      total_profit: calculation.totalProfit.toString(),
+      simple_return: calculation.simpleReturn?.toString() ?? null,
+    })
+    .eq("id", data);
+  if (updateError) throw new Error(`Nie udało się zapisać punktu historii: ${updateError.message}`);
   return data;
 }
