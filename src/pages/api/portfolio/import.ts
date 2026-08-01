@@ -4,7 +4,7 @@ import { calculatePortfolio } from "@/lib/portfolio/calculate";
 import { sha256Hex } from "@/lib/portfolio/fingerprint";
 import { NbpClient } from "@/lib/portfolio/nbp-client";
 import { reconstructHistory } from "@/lib/portfolio/history";
-import { savePortfolioHistory, savePortfolioImport } from "@/lib/portfolio/repository";
+import { saveOpenPositions, savePortfolioHistory, savePortfolioImport } from "@/lib/portfolio/repository";
 import { createClient } from "@/lib/supabase";
 import { SUPPORTED_CURRENCIES } from "@/lib/xtb/constants";
 import { XtbImportError } from "@/lib/xtb/errors";
@@ -35,6 +35,7 @@ export const POST: APIRoute = async (context) => {
     const calculation = await calculatePortfolio(portfolio, requestedCurrency as PortfolioCurrency, new NbpClient());
     const fingerprint = await sha256Hex(bytes);
     const importId = await savePortfolioImport(supabase, fingerprint, portfolio, calculation);
+    await saveOpenPositions(supabase, importId, context.locals.user.id, portfolio);
     const history = await reconstructHistory(portfolio, calculation);
     await savePortfolioHistory(supabase, importId, context.locals.user.id, calculation.baseCurrency, history.points);
 

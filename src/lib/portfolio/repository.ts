@@ -106,3 +106,31 @@ export async function savePortfolioHistory(
     if (error) throw new Error(`Nie udało się zapisać historii portfela: ${error.message}`);
   }
 }
+
+export async function saveOpenPositions(
+  client: SupabaseClient,
+  importId: string,
+  ownerId: string,
+  portfolio: ParsedXtbPortfolio,
+): Promise<void> {
+  const rows = portfolio.accounts
+    .flatMap((account) =>
+      account.openPositions.map((position) => ({
+        owner_id: ownerId,
+        import_id: importId,
+        account_currency: account.currency,
+        product: position.product,
+        ticker: position.ticker,
+        instrument: position.instrument,
+        category: position.category,
+        volume: position.volume.toString(),
+        report_value: position.value.toString(),
+      })),
+    )
+    .filter((position) => position.ticker !== null);
+  const { error: deleteError } = await client.from("portfolio_open_positions").delete().eq("import_id", importId);
+  if (deleteError) throw new Error(`Nie udało się odświeżyć pozycji: ${deleteError.message}`);
+  if (rows.length === 0) return;
+  const { error } = await client.from("portfolio_open_positions").insert(rows);
+  if (error) throw new Error(`Nie udało się zapisać otwartych pozycji: ${error.message}`);
+}

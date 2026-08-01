@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import ImportPortfolioForm from "@/components/portfolio/ImportPortfolioForm";
+import LiveValuation from "@/components/portfolio/LiveValuation";
 import { LogOut, ShieldCheck } from "lucide-react";
 
 const { user } = Astro.locals;
@@ -38,6 +39,8 @@ const { user } = Astro.locals;
           inwestycji.
         </p>
       </div>
+
+      <LiveValuation client:load />
 
       <ImportPortfolioForm client:load />
     </main>
