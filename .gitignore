@@ -26,6 +26,7 @@ supabase/.temp/
 
 # private XTB exports placed in the repository root
 /*.zip
+/*.jpeg
 
 # macOS-specific files
 .DS_Store
