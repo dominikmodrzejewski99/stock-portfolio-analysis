@@ -10,6 +10,7 @@ export interface HistoryPoint {
   netInvestedCapital: Decimal;
   totalProfit: Decimal;
   benchmarkValue: Decimal | null;
+  msciWorldValue: Decimal | null;
 }
 
 export interface HistoryResult {
@@ -61,6 +62,7 @@ export async function reconstructHistory(
     tickers.map((ticker) => prices.getDaily(ticker, earliest, calculation.valuationDate)),
   );
   const benchmarkResult = await prices.getDaily("^SP500TR", earliest, calculation.valuationDate).catch(() => null);
+  const msciWorldResult = await prices.getDaily("IWDA.L", earliest, calculation.valuationDate).catch(() => null);
   const series = new Map<string, PriceSeries>();
   const unavailableTickers: string[] = [];
   settled.forEach((result, index) => {
@@ -123,6 +125,7 @@ export async function reconstructHistory(
       netInvestedCapital: netCapital,
       totalProfit: totalValue.minus(netCapital),
       benchmarkValue: benchmarkResult ? latestPrice(benchmarkResult, date) : null,
+      msciWorldValue: msciWorldResult ? latestPrice(msciWorldResult, date) : null,
     });
   }
   const final = points.at(-1);

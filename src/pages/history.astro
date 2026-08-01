@@ -8,7 +8,7 @@ const supabase = createClient(Astro.request.headers, Astro.cookies);
 const { data } = supabase
   ? await supabase
       .from("portfolio_history_points")
-      .select("date,total_value,net_invested_capital,total_profit,benchmark_value,base_currency")
+      .select("date,total_value,net_invested_capital,total_profit,benchmark_value,msci_world_value,base_currency")
       .order("date")
   : { data: null };
 const points = (data ?? []).map((row) => ({
@@ -17,6 +17,7 @@ const points = (data ?? []).map((row) => ({
   netInvestedCapital: Number(row.net_invested_capital),
   totalProfit: Number(row.total_profit),
   benchmarkValue: row.benchmark_value == null ? null : Number(row.benchmark_value),
+  msciWorldValue: row.msci_world_value == null ? null : Number(row.msci_world_value),
 }));
 const currency = String(data?.at(-1)?.base_currency ?? "PLN");
 ---

@@ -7,6 +7,7 @@ interface Point {
   netInvestedCapital: number;
   totalProfit: number;
   benchmarkValue: number | null;
+  msciWorldValue: number | null;
 }
 interface PerformancePoint extends Point {
   periodProfit: number;
@@ -71,6 +72,8 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
   const chartRef = useRef<IChartApi | null>(null);
   const [range, setRange] = useState<Range>("MAX");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showSp500, setShowSp500] = useState(true);
+  const [showMsciWorld, setShowMsciWorld] = useState(true);
   const visible = useMemo(() => {
     const from = startDate(range, points.at(-1)?.date ?? "1970-01-01");
     return points.filter((point) => point.date >= from && point.netInvestedCapital !== 0);
@@ -81,6 +84,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
   const firstBenchmark = performance.find((point) => point.benchmarkValue !== null)?.benchmarkValue ?? null;
   const activeBenchmarkReturn =
     active?.benchmarkValue != null && firstBenchmark ? (active.benchmarkValue / firstBenchmark - 1) * 100 : null;
+  const firstMsciWorld = performance.find((point) => point.msciWorldValue !== null)?.msciWorldValue ?? null;
+  const activeMsciWorldReturn =
+    active?.msciWorldValue != null && firstMsciWorld ? (active.msciWorldValue / firstMsciWorld - 1) * 100 : null;
 
   useEffect(() => {
     const element = container.current;
@@ -134,9 +140,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
           })),
         );
         const benchmarkStart = performance.find((point) => point.benchmarkValue !== null)?.benchmarkValue ?? null;
-        if (benchmarkStart) {
+        if (benchmarkStart && showSp500) {
           const benchmark = chart.addSeries(LineSeries, {
-            color: "#475569",
+            color: "#2563eb",
             lineWidth: 2,
             lineStyle: LineStyle.Dashed,
             priceLineVisible: false,
@@ -148,6 +154,24 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
               point.benchmarkValue === null
                 ? []
                 : [{ time: toBusinessDay(point.date), value: (point.benchmarkValue / benchmarkStart - 1) * 100 }],
+            ),
+          );
+        }
+        const msciWorldStart = performance.find((point) => point.msciWorldValue !== null)?.msciWorldValue ?? null;
+        if (msciWorldStart && showMsciWorld) {
+          const msciWorld = chart.addSeries(LineSeries, {
+            color: "#7c3aed",
+            lineWidth: 2,
+            lineStyle: LineStyle.Dotted,
+            priceLineVisible: false,
+            lastValueVisible: true,
+            priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+          });
+          msciWorld.setData(
+            performance.flatMap((point) =>
+              point.msciWorldValue === null
+                ? []
+                : [{ time: toBusinessDay(point.date), value: (point.msciWorldValue / msciWorldStart - 1) * 100 }],
             ),
           );
         }
@@ -169,7 +193,7 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
       chartRef.current?.remove();
       chartRef.current = null;
     };
-  }, [performance]);
+  }, [performance, showMsciWorld, showSp500]);
 
   return (
     <section aria-labelledby="history-chart-title">
@@ -192,8 +216,11 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
               <p className={activeReturn >= 0 ? "text-emerald-700" : "text-red-700"}>
                 Portfel: {money(active.periodProfit, currency)} ({percentage(activeReturn)})
               </p>
-              {activeBenchmarkReturn !== null && (
-                <p className="text-slate-600">S&amp;P 500 TR: {percentage(activeBenchmarkReturn)}</p>
+              {showSp500 && activeBenchmarkReturn !== null && (
+                <p className="text-blue-700">S&amp;P 500 TR: {percentage(activeBenchmarkReturn)}</p>
+              )}
+              {showMsciWorld && activeMsciWorldReturn !== null && (
+                <p className="text-violet-700">MSCI World: {percentage(activeMsciWorldReturn)}</p>
               )}
             </div>
           )}
@@ -218,9 +245,33 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
 
       {visible.length > 1 ? (
         <div className="mt-7">
-          <p className="mb-2 text-xs font-medium tracking-wide text-slate-500 uppercase">
-            Prosty wynik za wybrany okres
-          </p>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">Prosty wynik za wybrany okres</p>
+            <fieldset className="flex flex-wrap gap-4" aria-label="Serie porównawcze">
+              <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm font-medium text-blue-800 hover:bg-blue-50">
+                <input
+                  type="checkbox"
+                  checked={showSp500}
+                  onChange={(event) => {
+                    setShowSp500(event.target.checked);
+                  }}
+                  className="size-4 accent-blue-600"
+                />
+                <span className="h-0 w-5 border-t-2 border-dashed border-blue-600" /> S&amp;P 500 TR
+              </label>
+              <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm font-medium text-violet-800 hover:bg-violet-50">
+                <input
+                  type="checkbox"
+                  checked={showMsciWorld}
+                  onChange={(event) => {
+                    setShowMsciWorld(event.target.checked);
+                  }}
+                  className="size-4 accent-violet-600"
+                />
+                <span className="h-0 w-5 border-t-2 border-dotted border-violet-700" /> MSCI World
+              </label>
+            </fieldset>
+          </div>
           <div
             ref={container}
             className="h-[430px] w-full"
@@ -235,12 +286,10 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
               <span className="size-2.5 rounded-full bg-red-700" /> Strata, poniżej 0%
             </span>
             <span className="text-xs">Oś X: data · Oś Y: wynik procentowy</span>
-            <span className="flex items-center gap-2">
-              <span className="w-6 border-t-2 border-dashed border-slate-600" /> S&amp;P 500 Total Return
-            </span>
           </div>
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            Wynik uwzględnia zmianę wartości portfela oraz wpłaty i wypłaty wykonane w wybranym okresie.
+            Wynik uwzględnia zmianę wartości portfela oraz wpłaty i wypłaty wykonane w wybranym okresie. MSCI World jest
+            reprezentowany przez akumulujący iShares Core MSCI World UCITS ETF w USD (IWDA).
           </p>
           <p className="mt-3 text-xs text-slate-500">
             Wykres wykorzystuje{" "}
