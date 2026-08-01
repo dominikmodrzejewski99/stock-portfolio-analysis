@@ -319,30 +319,30 @@ To pierwszy schemat domenowy; migracja nie przenosi istniejących danych. Przed 
 
 #### Automated
 
-- [x] 1.1 Testy parsera i fixture’ów przechodzą
-- [x] 1.2 Parser rozpoznaje wspierane raporty i puste rachunki
-- [x] 1.3 Niebezpieczny input jest odrzucany
-- [x] 1.4 Astro check i lint przechodzą
+- [x] 1.1 Testy parsera i fixture’ów przechodzą — 45e1772
+- [x] 1.2 Parser rozpoznaje wspierane raporty i puste rachunki — 45e1772
+- [x] 1.3 Niebezpieczny input jest odrzucany — 45e1772
+- [x] 1.4 Astro check i lint przechodzą — 45e1772
 
 #### Manual
 
-- [x] 1.5 Prywatny raport przechodzi bez zapisu lub logowania danych
-- [x] 1.6 Diagnostyka błędnego pliku jest bezpieczna i zrozumiała
+- [x] 1.5 Prywatny raport przechodzi bez zapisu lub logowania danych — 45e1772
+- [x] 1.6 Diagnostyka błędnego pliku jest bezpieczna i zrozumiała — 45e1772
 
 ### Phase 2: Transfery, kursy NBP i XIRR
 
 #### Automated
 
-- [ ] 2.1 Testy domenowe przechodzą
-- [ ] 2.2 XIRR spełnia dokładność 0,01 p.p.
-- [ ] 2.3 Transfery są eliminowane lub blokują wynik
-- [ ] 2.4 Kursy weekendowe i krzyżowe mają audyt
-- [ ] 2.5 Końcowe kontrole jakości przechodzą
+- [x] 2.1 Testy domenowe przechodzą
+- [x] 2.2 XIRR spełnia dokładność 0,01 p.p.
+- [x] 2.3 Transfery są eliminowane lub blokują wynik
+- [x] 2.4 Kursy weekendowe i krzyżowe mają audyt
+- [x] 2.5 Końcowe kontrole jakości przechodzą
 
 #### Manual
 
-- [ ] 2.6 Składowe próbnego portfela są wiarygodne
-- [ ] 2.7 Przepływy zewnętrzne są audytowalne
+- [x] 2.6 Składowe próbnego portfela są wiarygodne
+- [x] 2.7 Przepływy zewnętrzne są audytowalne
 
 ### Phase 3: Prywatny, atomowy zapis i API importu
 
