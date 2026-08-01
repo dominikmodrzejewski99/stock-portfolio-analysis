@@ -1,7 +1,7 @@
 import Decimal from "decimal.js";
 import type { ParsedXtbPortfolio, PortfolioCurrency, XtbPositionLot } from "@/lib/xtb/types";
 import type { PortfolioCalculation } from "./calculate";
-import { NbpRangeClient } from "./nbp-range-client";
+import { YahooFxHistoryClient, type FxHistoryProvider } from "./fx-history-client";
 import { YahooPriceClient, type PriceSeries } from "./yahoo-client";
 
 export interface HistoryPoint {
@@ -47,7 +47,7 @@ export async function reconstructHistory(
   portfolio: ParsedXtbPortfolio,
   calculation: PortfolioCalculation,
   prices = new YahooPriceClient(),
-  nbp = new NbpRangeClient(),
+  fxHistory: FxHistoryProvider = new YahooFxHistoryClient(prices),
 ): Promise<HistoryResult> {
   const operations = portfolio.accounts.flatMap((account) =>
     account.cashOperations.map((operation) => ({ ...operation, currency: account.currency })),
@@ -85,7 +85,7 @@ export async function reconstructHistory(
   const fx = new Map<PortfolioCurrency, Map<string, Decimal>>();
   await Promise.all(
     [...currencies].map(async (currency) =>
-      fx.set(currency, await nbp.getRates(currency, addDays(earliest, -10), calculation.valuationDate)),
+      fx.set(currency, await fxHistory.getRates(currency, addDays(earliest, -10), calculation.valuationDate)),
     ),
   );
   const rate = (currency: PortfolioCurrency, date: string): Decimal => {
