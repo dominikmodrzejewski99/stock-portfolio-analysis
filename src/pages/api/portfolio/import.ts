@@ -80,7 +80,13 @@ export const POST: APIRoute = async (context) => {
     if (error instanceof XtbImportError) {
       return Response.json({ error: error.message, code: error.code, location: error.location }, { status: 422 });
     }
+    const errorId = crypto.randomUUID();
+    console.error("Portfolio import failed", {
+      errorId,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     const debug = import.meta.env.DEV && error instanceof Error ? error.message : undefined;
-    return Response.json({ error: "Nie udało się przetworzyć raportu.", debug }, { status: 500 });
+    return Response.json({ error: `Nie udało się przetworzyć raportu. Kod błędu: ${errorId}`, debug }, { status: 500 });
   }
 };
