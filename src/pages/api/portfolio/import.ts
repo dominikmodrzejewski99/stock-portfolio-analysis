@@ -1,0 +1,68 @@
+import type { APIRoute } from "astro";
+import { isOwner } from "@/lib/auth";
+import { calculatePortfolio } from "@/lib/portfolio/calculate";
+import { sha256Hex } from "@/lib/portfolio/fingerprint";
+import { NbpClient } from "@/lib/portfolio/nbp-client";
+import { savePortfolioImport } from "@/lib/portfolio/repository";
+import { createClient } from "@/lib/supabase";
+import { SUPPORTED_CURRENCIES } from "@/lib/xtb/constants";
+import { XtbImportError } from "@/lib/xtb/errors";
+import { parseXtbPortfolio } from "@/lib/xtb/parser";
+import type { PortfolioCurrency } from "@/lib/xtb/types";
+
+export const POST: APIRoute = async (context) => {
+  if (!isOwner(context.locals.user)) {
+    return Response.json({ error: "Brak dostępu." }, { status: 403 });
+  }
+  const supabase = createClient(context.request.headers, context.cookies);
+  if (!supabase) return Response.json({ error: "Baza danych nie jest skonfigurowana." }, { status: 503 });
+
+  try {
+    const form = await context.request.formData();
+    const file = form.get("file");
+    const requestedCurrency = form.get("baseCurrency");
+    if (!(file instanceof File)) return Response.json({ error: "Wybierz raport ZIP lub XLSX." }, { status: 400 });
+    if (
+      typeof requestedCurrency !== "string" ||
+      !SUPPORTED_CURRENCIES.includes(requestedCurrency as PortfolioCurrency)
+    ) {
+      return Response.json({ error: "Nieobsługiwana waluta bazowa." }, { status: 400 });
+    }
+
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const portfolio = parseXtbPortfolio(bytes, file.name);
+    const calculation = await calculatePortfolio(portfolio, requestedCurrency as PortfolioCurrency, new NbpClient());
+    const fingerprint = await sha256Hex(bytes);
+    const importId = await savePortfolioImport(supabase, fingerprint, portfolio, calculation);
+
+    return Response.json({
+      importId,
+      baseCurrency: calculation.baseCurrency,
+      valuationDate: calculation.valuationDate,
+      securitiesValue: calculation.securitiesValue.toString(),
+      cashValue: calculation.cashValue.toString(),
+      totalValue: calculation.totalValue.toString(),
+      xirr: calculation.xirr?.toString() ?? null,
+      diagnostics: calculation.diagnostics,
+      accounts: portfolio.accounts.map((account) => ({
+        currency: account.currency,
+        products: account.snapshots.map((snapshot) => ({
+          name: snapshot.product,
+          currency: snapshot.currency,
+          securitiesValue: snapshot.securitiesValue.toString(),
+          cashValue: snapshot.reconstructedCash.toString(),
+        })),
+      })),
+      externalCashFlows: calculation.cashFlows.map((flow) => ({
+        date: flow.date,
+        amount: flow.amount.toString(),
+      })),
+    });
+  } catch (error) {
+    if (error instanceof XtbImportError) {
+      return Response.json({ error: error.message, code: error.code, location: error.location }, { status: 422 });
+    }
+    const debug = import.meta.env.DEV && error instanceof Error ? error.message : undefined;
+    return Response.json({ error: "Nie udało się przetworzyć raportu.", debug }, { status: 500 });
+  }
+};

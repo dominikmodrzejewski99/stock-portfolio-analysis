@@ -333,30 +333,30 @@ To pierwszy schemat domenowy; migracja nie przenosi istniejących danych. Przed 
 
 #### Automated
 
-- [x] 2.1 Testy domenowe przechodzą
-- [x] 2.2 XIRR spełnia dokładność 0,01 p.p.
-- [x] 2.3 Transfery są eliminowane lub blokują wynik
-- [x] 2.4 Kursy weekendowe i krzyżowe mają audyt
-- [x] 2.5 Końcowe kontrole jakości przechodzą
+- [x] 2.1 Testy domenowe przechodzą — 6c89153
+- [x] 2.2 XIRR spełnia dokładność 0,01 p.p. — 6c89153
+- [x] 2.3 Transfery są eliminowane lub blokują wynik — 6c89153
+- [x] 2.4 Kursy weekendowe i krzyżowe mają audyt — 6c89153
+- [x] 2.5 Końcowe kontrole jakości przechodzą — 6c89153
 
 #### Manual
 
-- [x] 2.6 Składowe próbnego portfela są wiarygodne
-- [x] 2.7 Przepływy zewnętrzne są audytowalne
+- [x] 2.6 Składowe próbnego portfela są wiarygodne — 6c89153
+- [x] 2.7 Przepływy zewnętrzne są audytowalne — 6c89153
 
 ### Phase 3: Prywatny, atomowy zapis i API importu
 
 #### Automated
 
-- [ ] 3.1 Migracja stosuje się na czystej bazie
-- [ ] 3.2 Testy RLS, atomowości i idempotencji przechodzą
-- [ ] 3.3 Nieautoryzowany import jest odrzucany
-- [ ] 3.4 Końcowe kontrole jakości przechodzą
+- [x] 3.1 Migracja stosuje się na czystej bazie
+- [x] 3.2 Testy RLS, atomowości i idempotencji przechodzą
+- [x] 3.3 Nieautoryzowany import jest odrzucany
+- [x] 3.4 Końcowe kontrole jakości przechodzą
 
 #### Manual
 
-- [ ] 3.5 Reimport nie tworzy duplikatów
-- [ ] 3.6 Błąd rachunku nie pozostawia częściowego importu
+- [x] 3.5 Reimport nie tworzy duplikatów
+- [x] 3.6 Błąd rachunku nie pozostawia częściowego importu
 
 ### Phase 4: Dashboard importu i wyniku
 

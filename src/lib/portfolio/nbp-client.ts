@@ -17,8 +17,11 @@ function previousUtcDate(date: string, days: number): string {
 
 export class NbpClient implements FxProvider {
   private readonly cache = new Map<string, FxQuote>();
+  private readonly fetcher: typeof fetch;
 
-  constructor(private readonly fetcher: typeof fetch = fetch) {}
+  constructor(fetcher?: typeof fetch) {
+    this.fetcher = fetcher ?? globalThis.fetch.bind(globalThis);
+  }
 
   async getRate(currency: PortfolioCurrency, date: string): Promise<FxQuote> {
     const requestedDate = date.slice(0, 10);
