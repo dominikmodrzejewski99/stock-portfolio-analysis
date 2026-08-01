@@ -7,6 +7,10 @@ interface Point {
   netInvestedCapital: number;
   totalProfit: number;
 }
+interface PerformancePoint extends Point {
+  periodProfit: number;
+  periodReturn: number;
+}
 type Range = "1M" | "6M" | "1R" | "YTD" | "MAX";
 
 function money(value: number, currency: string) {
@@ -42,6 +46,25 @@ function dateFromTime(time: Time): string {
   return `${time.year}-${String(time.month).padStart(2, "0")}-${String(time.day).padStart(2, "0")}`;
 }
 
+export function calculatePeriodPerformance(visible: Point[]): PerformancePoint[] {
+  const first = visible[0];
+  let compounded = 1;
+  let cumulativeFlows = 0;
+  return visible.map((point, index) => {
+    if (index > 0) {
+      const previous = visible[index - 1];
+      const flow = point.netInvestedCapital - previous.netInvestedCapital;
+      cumulativeFlows += flow;
+      if (previous.totalValue !== 0) compounded *= (point.totalValue - flow) / previous.totalValue;
+    }
+    return {
+      ...point,
+      periodProfit: point.totalValue - first.totalValue - cumulativeFlows,
+      periodReturn: (compounded - 1) * 100,
+    };
+  });
+}
+
 export default function PortfolioHistoryChart({ points, currency }: { points: Point[]; currency: string }) {
   const container = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -51,12 +74,13 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
     const from = startDate(range, points.at(-1)?.date ?? "1970-01-01");
     return points.filter((point) => point.date >= from && point.netInvestedCapital !== 0);
   }, [points, range]);
-  const active = visible.find((point) => point.date === selectedDate) ?? visible.at(-1);
-  const activeReturn = active ? (active.totalProfit / active.netInvestedCapital) * 100 : 0;
+  const performance = useMemo(() => calculatePeriodPerformance(visible), [visible]);
+  const active = performance.find((point) => point.date === selectedDate) ?? performance.at(-1);
+  const activeReturn = active?.periodReturn ?? 0;
 
   useEffect(() => {
     const element = container.current;
-    if (!element || visible.length < 2) return;
+    if (!element || performance.length < 2) return;
     let disposed = false;
     let observer: ResizeObserver | undefined;
 
@@ -99,9 +123,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
         priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
       });
       series.setData(
-        visible.map((point) => ({
+        performance.map((point) => ({
           time: toBusinessDay(point.date),
-          value: (point.totalProfit / point.netInvestedCapital) * 100,
+          value: point.periodReturn,
         })),
       );
       chart.timeScale().fitContent();
@@ -121,7 +145,7 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
       chartRef.current?.remove();
       chartRef.current = null;
     };
-  }, [visible]);
+  }, [performance]);
 
   return (
     <section aria-labelledby="history-chart-title">
@@ -143,7 +167,7 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
             <p
               className={`mt-1 text-sm font-semibold tabular-nums ${activeReturn >= 0 ? "text-emerald-700" : "text-red-700"}`}
             >
-              Wynik: {money(active.totalProfit, currency)} ({percentage(activeReturn)})
+              Wynik za okres: {money(active.periodProfit, currency)} ({percentage(activeReturn)})
             </p>
           )}
         </div>
@@ -167,7 +191,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
 
       {visible.length > 1 ? (
         <div className="mt-7">
-          <p className="mb-2 text-xs font-medium tracking-wide text-slate-500 uppercase">Stopa zwrotu od początku</p>
+          <p className="mb-2 text-xs font-medium tracking-wide text-slate-500 uppercase">
+            Stopa zwrotu za wybrany okres
+          </p>
           <div
             ref={container}
             className="h-[430px] w-full"
