@@ -21,7 +21,8 @@ export interface PortfolioImportResult {
   valuationDate: string;
   securitiesValue: string;
   cashValue: string;
-  otherCashValue: string;
+  ikeCashValue: string;
+  plansCashValue: string;
   marginValue: string;
   totalValue: string;
   xirr: string | null;

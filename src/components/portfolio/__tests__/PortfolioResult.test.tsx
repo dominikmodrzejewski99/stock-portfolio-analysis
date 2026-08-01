@@ -8,8 +8,9 @@ const result: PortfolioImportResult = {
   baseCurrency: "PLN",
   valuationDate: "2026-08-01",
   securitiesValue: "22211.58",
-  cashValue: "71.20",
-  otherCashValue: "0",
+  cashValue: "0",
+  ikeCashValue: "71.20",
+  plansCashValue: "0",
   marginValue: "0",
   totalValue: "22282.78",
   xirr: "0.1234",
@@ -50,7 +51,7 @@ describe("PortfolioResult", () => {
       />,
     );
 
-    expect(html).toContain("Nie można obliczyć");
+    expect(html).toContain("Brak wyniku");
     expect(html).toContain("Nieznana operacja");
   });
 });

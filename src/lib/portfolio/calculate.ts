@@ -11,7 +11,8 @@ export interface PortfolioCalculation {
   valuationDate: string;
   securitiesValue: Decimal;
   cashValue: Decimal;
-  otherCashValue: Decimal;
+  ikeCashValue: Decimal;
+  plansCashValue: Decimal;
   marginValue: Decimal;
   totalValue: Decimal;
   xirr: Decimal | null;
@@ -81,7 +82,8 @@ export async function calculatePortfolio(
 
   let securitiesValue = new Decimal(0);
   let cashValue = new Decimal(0);
-  let otherCashValue = new Decimal(0);
+  let ikeCashValue = new Decimal(0);
+  let plansCashValue = new Decimal(0);
   let marginValue = new Decimal(0);
   let valuationDate = "";
   for (const account of portfolio.accounts) {
@@ -99,12 +101,13 @@ export async function calculatePortfolio(
       const margin = await convertMoney(snapshot.marginValue, snapshot.currency, baseCurrency, date, provider);
       securitiesValue = securitiesValue.plus(securities.amount);
       if (snapshot.product === "My Trades") cashValue = cashValue.plus(freeFunds.amount);
-      else otherCashValue = otherCashValue.plus(freeFunds.amount);
+      else if (snapshot.product === "IKE") ikeCashValue = ikeCashValue.plus(freeFunds.amount);
+      else plansCashValue = plansCashValue.plus(freeFunds.amount);
       marginValue = marginValue.plus(margin.amount);
       quoteAudit.push(...securities.quotes, ...freeFunds.quotes, ...margin.quotes);
     }
   }
-  const totalValue = securitiesValue.plus(cashValue).plus(otherCashValue).plus(marginValue);
+  const totalValue = securitiesValue.plus(cashValue).plus(ikeCashValue).plus(plansCashValue).plus(marginValue);
   const endingFlow: MoneyCashFlow = { date: valuationDate, amount: totalValue, sourceOperationIds: [] };
   const cashFlows = [...flowByDate.values(), endingFlow].sort((left, right) => left.date.localeCompare(right.date));
 
@@ -123,7 +126,8 @@ export async function calculatePortfolio(
     valuationDate,
     securitiesValue,
     cashValue,
-    otherCashValue,
+    ikeCashValue,
+    plansCashValue,
     marginValue,
     totalValue,
     xirr,

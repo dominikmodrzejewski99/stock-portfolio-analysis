@@ -23,7 +23,6 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
       totals[product.currency] = (totals[product.currency] ?? 0) + Number(product.profitValue);
       return totals;
     }, {});
-  const ikeCash = result.accounts.flatMap((account) => account.products).find((product) => product.name === "IKE");
 
   return (
     <section aria-labelledby="portfolio-result-heading" className="mt-10">
@@ -43,60 +42,37 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
         </p>
       </div>
 
-      <dl className="grid gap-x-8 gap-y-7 py-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <div>
-          <dt className="flex items-center gap-2 text-sm text-slate-600">
-            <WalletCards aria-hidden="true" className="size-4" /> Łączna wartość
-          </dt>
-          <dd className="mt-2 text-2xl font-semibold text-slate-950 tabular-nums">
-            {money(result.totalValue, result.baseCurrency)}
-          </dd>
-        </div>
-        <div>
-          <dt className="flex items-center gap-2 text-sm text-slate-600">
-            <Landmark aria-hidden="true" className="size-4" /> Instrumenty
-          </dt>
-          <dd className="mt-2 text-xl font-semibold text-slate-900 tabular-nums">
-            {money(result.securitiesValue, result.baseCurrency)}
-          </dd>
-        </div>
-        <div>
-          <dt className="flex items-center gap-2 text-sm text-slate-600">
-            <ReceiptText aria-hidden="true" className="size-4" /> Wolne środki My Trades
-          </dt>
-          <dd className="mt-2 text-xl font-semibold text-slate-900 tabular-nums">
-            {money(result.cashValue, result.baseCurrency)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-sm text-slate-600">Gotówka IKE</dt>
-          <dd className="mt-2 text-xl font-semibold text-slate-900 tabular-nums">
-            {ikeCash ? money(ikeCash.cashValue, ikeCash.currency) : money("0", result.baseCurrency)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-sm text-slate-600">Depozyt zabezpieczający</dt>
-          <dd className="mt-2 text-xl font-semibold text-slate-900 tabular-nums">
-            {money(result.marginValue, result.baseCurrency)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-sm text-slate-600">MWR / XIRR rocznie</dt>
-          <dd
-            className={`mt-2 text-xl font-semibold tabular-nums ${hasBlockedResult ? "text-amber-800" : "text-indigo-800"}`}
-          >
-            {hasBlockedResult ? "Nie można obliczyć" : percent(result.xirr ?? "0")}
-          </dd>
-        </div>
-      </dl>
+      <div className="border-b border-slate-200 py-8">
+        <p className="flex items-center gap-2 text-sm font-medium text-slate-600">
+          <WalletCards aria-hidden="true" className="size-4" /> Łączna wartość portfela
+        </p>
+        <p className="mt-2 text-4xl font-semibold tracking-tight text-slate-950 tabular-nums sm:text-5xl">
+          {money(result.totalValue, result.baseCurrency)}
+        </p>
+      </div>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-slate-200 py-4 text-sm">
-        <span className="font-medium text-slate-900">Zysk otwartych pozycji według raportu</span>
-        {Object.entries(profitByCurrency).map(([currency, value]) => (
-          <span key={currency} className="font-semibold text-emerald-700 tabular-nums">
-            {money(String(value), currency as BaseCurrency)}
-          </span>
-        ))}
+      <div className="border-b border-slate-200 py-8">
+        <h3 className="text-lg font-semibold text-slate-950">Wynik</h3>
+        <div className="mt-5">
+          <p className="text-sm text-slate-600">Zysk otwartych pozycji według raportu</p>
+          <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1">
+            {Object.entries(profitByCurrency).map(([currency, value]) => (
+              <span key={currency} className="text-2xl font-semibold text-emerald-700 tabular-nums">
+                {money(String(value), currency as BaseCurrency)}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-7">
+          <p className="text-sm text-slate-600">Stopa zwrotu całego portfela od początku</p>
+          <p
+            className={`mt-1 text-2xl font-semibold tabular-nums ${hasBlockedResult ? "text-amber-800" : "text-indigo-800"}`}
+          >
+            {hasBlockedResult ? "Brak wyniku" : percent(result.xirr ?? "0")}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">Wynik roczny MWR/XIRR, uwzględnia daty wpłat i wypłat.</p>
+        </div>
       </div>
 
       {hasBlockedResult && (
@@ -109,6 +85,49 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
           </ul>
         </div>
       )}
+
+      <div className="grid gap-8 border-b border-slate-200 py-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
+        <div>
+          <h3 className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <Landmark aria-hidden="true" className="size-4" /> Instrumenty
+          </h3>
+          <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 tabular-nums">
+            {money(result.securitiesValue, result.baseCurrency)}
+          </p>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+            Bieżąca wartość akcji i ETF-ów. Ekspozycja CFD nie jest liczona jako posiadany kapitał.
+          </p>
+        </div>
+
+        <dl className="divide-y divide-slate-200 text-sm">
+          <div className="flex items-center justify-between gap-6 py-3 first:pt-0">
+            <dt className="flex items-center gap-2 text-slate-600">
+              <ReceiptText aria-hidden="true" className="size-4" /> Wolne środki My Trades
+            </dt>
+            <dd className="font-semibold text-slate-900 tabular-nums">
+              {money(result.cashValue, result.baseCurrency)}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-6 py-3">
+            <dt className="text-slate-600">Gotówka IKE</dt>
+            <dd className="font-semibold text-slate-900 tabular-nums">
+              {money(result.ikeCashValue, result.baseCurrency)}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-6 py-3">
+            <dt className="text-slate-600">Gotówka w planach</dt>
+            <dd className="font-semibold text-slate-900 tabular-nums">
+              {money(result.plansCashValue, result.baseCurrency)}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-6 py-3 last:pb-0">
+            <dt className="text-slate-600">Depozyt zabezpieczający</dt>
+            <dd className="font-semibold text-slate-900 tabular-nums">
+              {money(result.marginValue, result.baseCurrency)}
+            </dd>
+          </div>
+        </dl>
+      </div>
 
       <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70">
         <div className="border-b border-slate-200 px-5 py-4">
