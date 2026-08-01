@@ -10,7 +10,7 @@ interface LiveResult {
   reportDate?: string;
   marketDate?: string;
   unavailableTickers?: string[];
-  cfdFrozen?: boolean;
+  cfdLive?: boolean;
 }
 
 function money(value: string, currency: string) {
@@ -100,10 +100,16 @@ export default function LiveValuation() {
         Ceny z {result.marketDate}, stan pozycji z raportu XTB z {result.reportDate}. Nowe transakcje wymagają kolejnego
         importu.
       </p>
-      {((result.cfdFrozen ?? false) || (result.unavailableTickers?.length ?? 0) > 0) && (
+      {(result.unavailableTickers?.length ?? 0) > 0 && (
         <p className="mt-2 text-xs leading-5 text-amber-800">
-          CFD oraz instrumenty bez aktualnego notowania pozostają w wartości z raportu
+          Instrumenty bez aktualnego notowania pozostają w wartości z raportu
           {result.unavailableTickers?.length ? `: ${result.unavailableTickers.join(", ")}` : ""}.
+        </p>
+      )}
+      {result.cfdLive && (
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          Wynik CFD jest aktualizowany według ceny instrumentu bazowego. Depozyt zabezpieczający pozostaje z raportu
+          XTB.
         </p>
       )}
     </section>

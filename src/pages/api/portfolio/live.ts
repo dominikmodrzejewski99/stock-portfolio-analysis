@@ -30,7 +30,7 @@ export const GET: APIRoute = async (context) => {
 
   const { data: positions, error: positionsError } = await supabase
     .from("portfolio_open_positions")
-    .select("ticker,category,volume,report_value,account_currency")
+    .select("ticker,category,volume,report_value,report_profit,account_currency")
     .eq("import_id", latestImport.id);
   if (positionsError) return Response.json({ error: "Nie udało się odczytać pozycji." }, { status: 500 });
   if (positions.length === 0) {
@@ -40,6 +40,11 @@ export const GET: APIRoute = async (context) => {
       valuationDate: String(latestImport.valuation_date),
     });
   }
+  const { data: cfdLots, error: cfdError } = await supabase
+    .from("portfolio_open_cfd_lots")
+    .select("ticker,direction,volume,open_price,account_currency")
+    .eq("import_id", latestImport.id);
+  if (cfdError) return Response.json({ error: "Nie udało się odczytać pozycji CFD." }, { status: 500 });
 
   const today = new Date().toISOString().slice(0, 10);
   const priceClient = new YahooPriceClient();
@@ -84,6 +89,40 @@ export const GET: APIRoute = async (context) => {
     );
     delta = delta.plus(liveConverted.amount.minus(reportConverted.amount));
   }
+  for (const position of positions.filter((item) => String(item.category).trim().toUpperCase() === "CFD")) {
+    const ticker = String(position.ticker);
+    const price = prices.get(ticker);
+    const lots = cfdLots.filter((lot) => String(lot.ticker) === ticker);
+    if (!price || !["PLN", "EUR", "USD"].includes(price.currency) || lots.length === 0) {
+      unavailableTickers.push(ticker);
+      continue;
+    }
+    let liveProfit = new Decimal(0);
+    for (const lot of lots) {
+      const direction = String(lot.direction) === "SELL" ? -1 : 1;
+      liveProfit = liveProfit.plus(
+        price.latest.close
+          .minus(new Decimal(String(lot.open_price)))
+          .times(new Decimal(String(lot.volume)))
+          .times(direction),
+      );
+    }
+    const liveConverted = await convertMoney(
+      liveProfit,
+      price.currency as PortfolioCurrency,
+      baseCurrency,
+      price.latest.date,
+      nbp,
+    );
+    const reportConverted = await convertMoney(
+      new Decimal(String(position.report_profit ?? 0)),
+      position.account_currency as PortfolioCurrency,
+      baseCurrency,
+      String(latestImport.valuation_date),
+      nbp,
+    );
+    delta = delta.plus(liveConverted.amount.minus(reportConverted.amount));
+  }
   const totalValue = new Decimal(String(latestImport.total_value)).plus(delta);
   return Response.json({
     available: true,
@@ -94,6 +133,6 @@ export const GET: APIRoute = async (context) => {
     reportDate: String(latestImport.valuation_date),
     marketDate,
     unavailableTickers: [...new Set(unavailableTickers)],
-    cfdFrozen: positions.some((position) => String(position.category).trim().toUpperCase() === "CFD"),
+    cfdLive: cfdLots.length > 0,
   });
 };

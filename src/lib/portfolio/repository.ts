@@ -125,6 +125,7 @@ export async function saveOpenPositions(
         category: position.category,
         volume: position.volume.toString(),
         report_value: position.value.toString(),
+        report_profit: position.netProfit?.toString() ?? null,
       })),
     )
     .filter((position) => position.ticker !== null);
@@ -133,4 +134,25 @@ export async function saveOpenPositions(
   if (rows.length === 0) return;
   const { error } = await client.from("portfolio_open_positions").insert(rows);
   if (error) throw new Error(`Nie udało się zapisać otwartych pozycji: ${error.message}`);
+
+  const cfdLots = portfolio.accounts.flatMap((account) =>
+    account.positionLots
+      .filter((lot) => lot.closeAt === null && lot.category.trim().toUpperCase() === "CFD")
+      .map((lot) => ({
+        owner_id: ownerId,
+        import_id: importId,
+        account_currency: account.currency,
+        ticker: lot.ticker,
+        position_key: lot.positionId,
+        direction: lot.type.trim().toUpperCase().includes("SELL") ? "SELL" : "BUY",
+        volume: lot.volume.toString(),
+        open_price: lot.openPrice.toString(),
+      })),
+  );
+  const { error: cfdDeleteError } = await client.from("portfolio_open_cfd_lots").delete().eq("import_id", importId);
+  if (cfdDeleteError) throw new Error(`Nie udało się odświeżyć CFD: ${cfdDeleteError.message}`);
+  if (cfdLots.length > 0) {
+    const { error: cfdError } = await client.from("portfolio_open_cfd_lots").insert(cfdLots);
+    if (cfdError) throw new Error(`Nie udało się zapisać CFD: ${cfdError.message}`);
+  }
 }
