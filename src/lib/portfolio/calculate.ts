@@ -11,6 +11,7 @@ export interface PortfolioCalculation {
   valuationDate: string;
   securitiesValue: Decimal;
   cashValue: Decimal;
+  otherCashValue: Decimal;
   marginValue: Decimal;
   totalValue: Decimal;
   xirr: Decimal | null;
@@ -80,6 +81,7 @@ export async function calculatePortfolio(
 
   let securitiesValue = new Decimal(0);
   let cashValue = new Decimal(0);
+  let otherCashValue = new Decimal(0);
   let marginValue = new Decimal(0);
   let valuationDate = "";
   for (const account of portfolio.accounts) {
@@ -96,12 +98,13 @@ export async function calculatePortfolio(
       );
       const margin = await convertMoney(snapshot.marginValue, snapshot.currency, baseCurrency, date, provider);
       securitiesValue = securitiesValue.plus(securities.amount);
-      cashValue = cashValue.plus(freeFunds.amount);
+      if (snapshot.product === "My Trades") cashValue = cashValue.plus(freeFunds.amount);
+      else otherCashValue = otherCashValue.plus(freeFunds.amount);
       marginValue = marginValue.plus(margin.amount);
       quoteAudit.push(...securities.quotes, ...freeFunds.quotes, ...margin.quotes);
     }
   }
-  const totalValue = securitiesValue.plus(cashValue).plus(marginValue);
+  const totalValue = securitiesValue.plus(cashValue).plus(otherCashValue).plus(marginValue);
   const endingFlow: MoneyCashFlow = { date: valuationDate, amount: totalValue, sourceOperationIds: [] };
   const cashFlows = [...flowByDate.values(), endingFlow].sort((left, right) => left.date.localeCompare(right.date));
 
@@ -120,6 +123,7 @@ export async function calculatePortfolio(
     valuationDate,
     securitiesValue,
     cashValue,
+    otherCashValue,
     marginValue,
     totalValue,
     xirr,

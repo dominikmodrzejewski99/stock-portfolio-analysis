@@ -17,6 +17,12 @@ function percent(value: string): string {
 
 export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
   const hasBlockedResult = result.diagnostics.length > 0 || result.xirr === null;
+  const profitByCurrency = result.accounts
+    .flatMap((account) => account.products)
+    .reduce<Partial<Record<BaseCurrency, number>>>((totals, product) => {
+      totals[product.currency] = (totals[product.currency] ?? 0) + Number(product.profitValue);
+      return totals;
+    }, {});
 
   return (
     <section aria-labelledby="portfolio-result-heading" className="mt-10">
@@ -36,7 +42,7 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
         </p>
       </div>
 
-      <dl className="grid gap-x-8 gap-y-7 py-8 sm:grid-cols-2 lg:grid-cols-5">
+      <dl className="grid gap-x-8 gap-y-7 py-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <div>
           <dt className="flex items-center gap-2 text-sm text-slate-600">
             <WalletCards aria-hidden="true" className="size-4" /> Łączna wartość
@@ -55,10 +61,16 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
         </div>
         <div>
           <dt className="flex items-center gap-2 text-sm text-slate-600">
-            <ReceiptText aria-hidden="true" className="size-4" /> Wolne środki
+            <ReceiptText aria-hidden="true" className="size-4" /> Wolne środki My Trades
           </dt>
           <dd className="mt-2 text-xl font-semibold text-slate-900 tabular-nums">
             {money(result.cashValue, result.baseCurrency)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-sm text-slate-600">Gotówka w planach i IKE</dt>
+          <dd className="mt-2 text-xl font-semibold text-slate-900 tabular-nums">
+            {money(result.otherCashValue, result.baseCurrency)}
           </dd>
         </div>
         <div>
@@ -76,6 +88,15 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
           </dd>
         </div>
       </dl>
+
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-slate-200 py-4 text-sm">
+        <span className="font-medium text-slate-900">Zysk otwartych pozycji według raportu</span>
+        {Object.entries(profitByCurrency).map(([currency, value]) => (
+          <span key={currency} className="font-semibold text-emerald-700 tabular-nums">
+            {money(String(value), currency as BaseCurrency)}
+          </span>
+        ))}
+      </div>
 
       {hasBlockedResult && (
         <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-950">
@@ -110,7 +131,11 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
                   Instrumenty: {money(product.securitiesValue, product.currency)}
                 </p>
                 <div className="text-sm text-slate-700 tabular-nums">
-                  <p>Wolne środki: {money(product.cashValue, product.currency)}</p>
+                  <p>
+                    {product.name === "My Trades" ? "Wolne środki" : "Gotówka"}:{" "}
+                    {money(product.cashValue, product.currency)}
+                  </p>
+                  <p>Zysk: {money(product.profitValue, product.currency)}</p>
                   {Number(product.marginValue) !== 0 && <p>Depozyt: {money(product.marginValue, product.currency)}</p>}
                 </div>
               </div>

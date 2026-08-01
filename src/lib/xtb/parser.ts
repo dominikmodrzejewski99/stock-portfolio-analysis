@@ -152,6 +152,20 @@ function parseSnapshots(
       (cashByProduct.get(operation.product) ?? new Decimal(0)).plus(operation.amount),
     );
   }
+  const profitByProduct = new Map<string, Decimal>();
+  for (const row of rows.slice(summaryIndex + 1)) {
+    if (get(row, headers, "Metric") !== "Profit") continue;
+    const product = get(row, headers, "Product");
+    if (!product) continue;
+    profitByProduct.set(
+      product,
+      parseMoney(get(row, headers, "Amount"), {
+        file: sourceName,
+        sheet: "Open Positions",
+        row: Number(row.__rowNumber),
+      }),
+    );
+  }
 
   return rows.slice(summaryIndex + 1).flatMap((row) => {
     if (get(row, headers, "Metric") !== "Value") return [];
@@ -191,6 +205,7 @@ function parseSnapshots(
         reconstructedCash: cashByProduct.get(product) ?? new Decimal(0),
         cfdProfit,
         marginValue,
+        profitValue: profitByProduct.get(product) ?? new Decimal(0),
         valuationAt,
       },
     ];

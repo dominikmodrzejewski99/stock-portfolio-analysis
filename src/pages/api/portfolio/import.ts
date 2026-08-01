@@ -41,6 +41,7 @@ export const POST: APIRoute = async (context) => {
       valuationDate: calculation.valuationDate,
       securitiesValue: calculation.securitiesValue.toString(),
       cashValue: calculation.cashValue.toString(),
+      otherCashValue: calculation.otherCashValue.toString(),
       marginValue: calculation.marginValue.toString(),
       totalValue: calculation.totalValue.toString(),
       xirr: calculation.xirr?.toString() ?? null,
@@ -53,6 +54,7 @@ export const POST: APIRoute = async (context) => {
           securitiesValue: snapshot.securitiesValue.toString(),
           cashValue: snapshot.reconstructedCash.plus(snapshot.cfdProfit).minus(snapshot.marginValue).toString(),
           marginValue: snapshot.marginValue.toString(),
+          profitValue: snapshot.profitValue.toString(),
         })),
       })),
       externalCashFlows: calculation.cashFlows.map((flow) => ({

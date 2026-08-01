@@ -21,6 +21,7 @@ describe("XTB parser", () => {
     expect(account.openPositions[0].value.toFixed(2)).toBe("22211.58");
     expect(account.snapshots[0].currency).toBe("PLN");
     expect(account.snapshots[0].reconstructedCash.toFixed(2)).toBe("2920.00");
+    expect(account.snapshots[0].profitValue.toFixed(2)).toBe("4112.91");
     expect(account.closedPositionsCount).toBe(1);
   });
 

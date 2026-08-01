@@ -42,6 +42,7 @@ export interface XtbProductSnapshot {
   reconstructedCash: Decimal;
   cfdProfit: Decimal;
   marginValue: Decimal;
+  profitValue: Decimal;
   valuationAt: string;
 }
 
