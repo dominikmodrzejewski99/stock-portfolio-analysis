@@ -259,12 +259,12 @@ Przed wyłączeniem signup należy utworzyć konto właściciela i zachować jeg
 
 #### Automated
 
-- [x] 3.1 Lokalna konfiguracja blokuje rejestrację
-- [x] 3.2 Przykład środowiska zawiera komplet zmiennych bez sekretów
-- [x] 3.3 Końcowe kontrole jakości przechodzą
+- [x] 3.1 Lokalna konfiguracja blokuje rejestrację — 3db66d6
+- [x] 3.2 Przykład środowiska zawiera komplet zmiennych bez sekretów — 3db66d6
+- [x] 3.3 Końcowe kontrole jakości przechodzą — 3db66d6
 
 #### Manual
 
-- [x] 3.4 Hostowany Supabase odrzuca publiczny signup
-- [x] 3.5 Właściciel loguje się z dwóch urządzeń
-- [x] 3.6 Bezpośredni URL nie omija ochrony prywatnego obszaru
+- [x] 3.4 Hostowany Supabase odrzuca publiczny signup — 3db66d6
+- [x] 3.5 Właściciel loguje się z dwóch urządzeń — 3db66d6
+- [x] 3.6 Bezpośredni URL nie omija ochrony prywatnego obszaru — 3db66d6
