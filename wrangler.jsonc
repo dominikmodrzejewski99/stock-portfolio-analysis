@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "myportfelik",
   "main": "@astrojs/cloudflare/entrypoints/server",
-  "compatibility_date": "2026-05-08",
+  "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "binding": "ASSETS",
@@ -12,4 +12,10 @@
   "observability": {
     "enabled": true,
   },
+  "services": [
+    {
+      "binding": "MARKET_DATA",
+      "service": "myportfelik-market-data",
+    },
+  ],
 }

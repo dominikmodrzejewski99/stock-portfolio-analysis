@@ -21,11 +21,7 @@ export interface HistoryResult {
   unavailableTickers: string[];
 }
 
-// The free Workers plan allows 50 subrequests per invocation. Imports also need
-// room for authentication, FX, benchmarks, and chunked Supabase writes.
-const MAX_MARKET_HISTORY_TICKERS = 14;
-
-export function selectHistoryTickers(lots: XtbPositionLot[], limit = MAX_MARKET_HISTORY_TICKERS): string[] {
+export function selectHistoryTickers(lots: XtbPositionLot[], limit = Number.POSITIVE_INFINITY): string[] {
   const exposure = new Map<string, Decimal>();
   for (const lot of lots) {
     const cost = lot.openPrice.times(lot.volume).abs();

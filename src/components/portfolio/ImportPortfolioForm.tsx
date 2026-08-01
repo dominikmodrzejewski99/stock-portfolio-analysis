@@ -32,7 +32,7 @@ export default function ImportPortfolioForm() {
     body.set("baseCurrency", currency);
     try {
       const response = await fetch("/api/portfolio/import", { method: "POST", body });
-      const payload = (await response.json()) as PortfolioImportResult | { error?: string };
+      const payload = await response.json<PortfolioImportResult | { error?: string }>();
       if (!response.ok || !("importId" in payload)) {
         setError("error" in payload && payload.error ? payload.error : "Nie udało się zaimportować raportu.");
         return;

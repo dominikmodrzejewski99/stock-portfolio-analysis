@@ -38,7 +38,7 @@ export class NbpClient implements FxProvider {
       );
       if (response.status === 404) continue;
       if (!response.ok) throw new Error("Nie udało się pobrać kursu NBP.");
-      const payload = (await response.json()) as NbpResponse;
+      const payload = await response.json<NbpResponse>();
       const rate = payload.rates[0];
       const quote: FxQuote = {
         currency,

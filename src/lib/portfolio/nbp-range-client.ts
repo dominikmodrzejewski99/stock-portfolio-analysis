@@ -24,7 +24,7 @@ export class NbpRangeClient {
         { headers: { Accept: "application/json" } },
       );
       if (!response.ok) throw new Error(`Nie udało się pobrać historii kursu ${currency} z NBP.`);
-      const payload = (await response.json()) as NbpRangeResponse;
+      const payload = await response.json<NbpRangeResponse>();
       for (const rate of payload.rates) quoted.set(rate.effectiveDate, new Decimal(rate.mid));
     }
     const filled = new Map<string, Decimal>();

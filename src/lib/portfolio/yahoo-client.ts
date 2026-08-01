@@ -52,7 +52,7 @@ export class YahooPriceClient {
     url.searchParams.set("events", "splits");
     const response = await this.fetcher(url, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
     if (!response.ok) throw new Error(`Brak notowań dla ${ticker} (${response.status}).`);
-    const payload = (await response.json()) as YahooResponse;
+    const payload = await response.json<YahooResponse>();
     const result = payload.chart?.result?.[0];
     if (!result) throw new Error(payload.chart?.error?.description ?? `Brak notowań dla ${ticker}.`);
     if (Object.keys(result.events?.splits ?? {}).length > 0) {

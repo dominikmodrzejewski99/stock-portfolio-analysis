@@ -27,7 +27,7 @@ export default function LiveValuation() {
     setLoading(true);
     try {
       const response = await fetch("/api/portfolio/live");
-      setResult(response.ok ? ((await response.json()) as LiveResult) : null);
+      setResult(response.ok ? await response.json<LiveResult>() : null);
     } catch {
       setResult(null);
     } finally {
@@ -38,7 +38,7 @@ export default function LiveValuation() {
   useEffect(() => {
     let active = true;
     void fetch("/api/portfolio/live")
-      .then(async (response) => (response.ok ? ((await response.json()) as LiveResult) : null))
+      .then(async (response) => (response.ok ? await response.json<LiveResult>() : null))
       .then((payload) => {
         if (active) setResult(payload);
       })
