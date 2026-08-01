@@ -28,6 +28,17 @@ export default {
     const responses = await Promise.all(
       urls.map((item) => fetch(item, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } })),
     );
+    const retryBudget = Math.max(0, 50 - urls.length);
+    const failedIndexes = responses.flatMap((response, index) => (response.ok ? [] : [index])).slice(0, retryBudget);
+    await Promise.all(
+      failedIndexes.map(async (index) => {
+        const retryUrl = new URL(urls[index]);
+        retryUrl.hostname = "query1.finance.yahoo.com";
+        responses[index] = await fetch(retryUrl, {
+          headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" },
+        });
+      }),
+    );
     const results = await Promise.all(
       responses.map(async (response) => ({
         status: response.status,

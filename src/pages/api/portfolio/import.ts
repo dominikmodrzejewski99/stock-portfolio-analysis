@@ -41,6 +41,11 @@ export const POST: APIRoute = async (context) => {
     await saveOpenPositions(supabase, importId, context.locals.user.id, portfolio);
     const priceClient = new YahooPriceClient(createMarketDataFetcher(env.MARKET_DATA));
     const history = await reconstructHistory(portfolio, calculation, priceClient);
+    console.info("Portfolio history reconstructed", {
+      importId,
+      pointsCount: history.points.length,
+      unavailableTickers: history.unavailableTickers,
+    });
     await savePortfolioHistory(supabase, importId, context.locals.user.id, calculation.baseCurrency, history.points);
 
     return Response.json({
