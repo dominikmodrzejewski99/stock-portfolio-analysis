@@ -6,6 +6,7 @@ import { sha256Hex } from "@/lib/portfolio/fingerprint";
 import { YahooPriceClient } from "@/lib/portfolio/yahoo-client";
 import { NbpClient } from "@/lib/portfolio/nbp-client";
 import { reconstructHistory } from "@/lib/portfolio/history";
+import { createMarketDataFetcher } from "@/lib/portfolio/market-data-fetcher";
 import { saveOpenPositions, savePortfolioHistory, savePortfolioImport } from "@/lib/portfolio/repository";
 import { createClient } from "@/lib/supabase";
 import { SUPPORTED_CURRENCIES } from "@/lib/xtb/constants";
@@ -38,7 +39,7 @@ export const POST: APIRoute = async (context) => {
     const fingerprint = await sha256Hex(bytes);
     const importId = await savePortfolioImport(supabase, fingerprint, portfolio, calculation);
     await saveOpenPositions(supabase, importId, context.locals.user.id, portfolio);
-    const priceClient = new YahooPriceClient((input, init) => env.MARKET_DATA.fetch(new Request(input, init)));
+    const priceClient = new YahooPriceClient(createMarketDataFetcher(env.MARKET_DATA));
     const history = await reconstructHistory(portfolio, calculation, priceClient);
     await savePortfolioHistory(supabase, importId, context.locals.user.id, calculation.baseCurrency, history.points);
 
