@@ -9,22 +9,44 @@ const supabase = createClient(Astro.request.headers, Astro.cookies);
 const { data } = supabase
   ? await supabase
       .from("portfolio_history_points")
-      .select("date,total_value,net_invested_capital,total_profit,benchmark_value,msci_world_value,base_currency")
+      .select(
+        "date,total_value,net_invested_capital,total_profit,benchmark_value,msci_world_value,nasdaq_100_value,emerging_markets_value,semiconductor_value,base_currency",
+      )
       .order("date")
   : { data: null };
 const rows = data ?? [];
 let sp500Fallback: DailyPrice[] = [];
 let msciWorldFallback: DailyPrice[] = [];
+let nasdaq100Fallback: DailyPrice[] = [];
+let emergingMarketsFallback: DailyPrice[] = [];
+let semiconductorFallback: DailyPrice[] = [];
 const firstDate = rows[0]?.date == null ? null : String(rows[0].date);
 const lastDate = rows.at(-1)?.date == null ? null : String(rows.at(-1)?.date);
-if (firstDate && lastDate && rows.some((row) => row.benchmark_value == null || row.msci_world_value == null)) {
+if (
+  firstDate &&
+  lastDate &&
+  rows.some(
+    (row) =>
+      row.benchmark_value == null ||
+      row.msci_world_value == null ||
+      row.nasdaq_100_value == null ||
+      row.emerging_markets_value == null ||
+      row.semiconductor_value == null,
+  )
+) {
   const priceClient = new YahooPriceClient();
-  const [sp500, msciWorld] = await Promise.all([
+  const [sp500, msciWorld, nasdaq100, emergingMarkets, semiconductor] = await Promise.all([
     priceClient.getDaily("^SP500TR", firstDate, lastDate).catch(() => null),
     priceClient.getDaily("IWDA.L", firstDate, lastDate).catch(() => null),
+    priceClient.getDaily("CNDX.L", firstDate, lastDate).catch(() => null),
+    priceClient.getDaily("EIMI.L", firstDate, lastDate).catch(() => null),
+    priceClient.getDaily("SMH.L", firstDate, lastDate).catch(() => null),
   ]);
   sp500Fallback = sp500?.prices ?? [];
   msciWorldFallback = msciWorld?.prices ?? [];
+  nasdaq100Fallback = nasdaq100?.prices ?? [];
+  emergingMarketsFallback = emergingMarkets?.prices ?? [];
+  semiconductorFallback = semiconductor?.prices ?? [];
 }
 function priceOnOrBefore(prices: DailyPrice[], date: string): number | null {
   let value: number | null = null;
@@ -43,6 +65,16 @@ const points = rows.map((row) => ({
     row.benchmark_value == null ? priceOnOrBefore(sp500Fallback, String(row.date)) : Number(row.benchmark_value),
   msciWorldValue:
     row.msci_world_value == null ? priceOnOrBefore(msciWorldFallback, String(row.date)) : Number(row.msci_world_value),
+  nasdaq100Value:
+    row.nasdaq_100_value == null ? priceOnOrBefore(nasdaq100Fallback, String(row.date)) : Number(row.nasdaq_100_value),
+  emergingMarketsValue:
+    row.emerging_markets_value == null
+      ? priceOnOrBefore(emergingMarketsFallback, String(row.date))
+      : Number(row.emerging_markets_value),
+  semiconductorValue:
+    row.semiconductor_value == null
+      ? priceOnOrBefore(semiconductorFallback, String(row.date))
+      : Number(row.semiconductor_value),
 }));
 const currency = String(data?.at(-1)?.base_currency ?? "PLN");
 ---

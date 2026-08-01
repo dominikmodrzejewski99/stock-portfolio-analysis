@@ -11,6 +11,9 @@ describe("calculatePeriodPerformance", () => {
         totalProfit: 0,
         benchmarkValue: 1000,
         msciWorldValue: 100,
+        nasdaq100Value: 100,
+        emergingMarketsValue: 100,
+        semiconductorValue: 100,
       },
       {
         date: "2026-01-02",
@@ -19,6 +22,9 @@ describe("calculatePeriodPerformance", () => {
         totalProfit: 10,
         benchmarkValue: 1010,
         msciWorldValue: 101,
+        nasdaq100Value: 101,
+        emergingMarketsValue: 101,
+        semiconductorValue: 101,
       },
       {
         date: "2026-01-03",
@@ -27,6 +33,9 @@ describe("calculatePeriodPerformance", () => {
         totalProfit: 15,
         benchmarkValue: 1020,
         msciWorldValue: 102,
+        nasdaq100Value: 102,
+        emergingMarketsValue: 102,
+        semiconductorValue: 102,
       },
     ]);
 
@@ -43,6 +52,9 @@ describe("calculatePeriodPerformance", () => {
         totalProfit: 20,
         benchmarkValue: null,
         msciWorldValue: null,
+        nasdaq100Value: null,
+        emergingMarketsValue: null,
+        semiconductorValue: null,
       },
       {
         date: "2026-06-02",
@@ -51,6 +63,9 @@ describe("calculatePeriodPerformance", () => {
         totalProfit: 14,
         benchmarkValue: null,
         msciWorldValue: null,
+        nasdaq100Value: null,
+        emergingMarketsValue: null,
+        semiconductorValue: null,
       },
     ]);
 

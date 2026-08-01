@@ -11,6 +11,9 @@ export interface HistoryPoint {
   totalProfit: Decimal;
   benchmarkValue: Decimal | null;
   msciWorldValue: Decimal | null;
+  nasdaq100Value: Decimal | null;
+  emergingMarketsValue: Decimal | null;
+  semiconductorValue: Decimal | null;
 }
 
 export interface HistoryResult {
@@ -63,6 +66,11 @@ export async function reconstructHistory(
   );
   const benchmarkResult = await prices.getDaily("^SP500TR", earliest, calculation.valuationDate).catch(() => null);
   const msciWorldResult = await prices.getDaily("IWDA.L", earliest, calculation.valuationDate).catch(() => null);
+  const [nasdaq100Result, emergingMarketsResult, semiconductorResult] = await Promise.all([
+    prices.getDaily("CNDX.L", earliest, calculation.valuationDate).catch(() => null),
+    prices.getDaily("EIMI.L", earliest, calculation.valuationDate).catch(() => null),
+    prices.getDaily("SMH.L", earliest, calculation.valuationDate).catch(() => null),
+  ]);
   const series = new Map<string, PriceSeries>();
   const unavailableTickers: string[] = [];
   settled.forEach((result, index) => {
@@ -126,6 +134,9 @@ export async function reconstructHistory(
       totalProfit: totalValue.minus(netCapital),
       benchmarkValue: benchmarkResult ? latestPrice(benchmarkResult, date) : null,
       msciWorldValue: msciWorldResult ? latestPrice(msciWorldResult, date) : null,
+      nasdaq100Value: nasdaq100Result ? latestPrice(nasdaq100Result, date) : null,
+      emergingMarketsValue: emergingMarketsResult ? latestPrice(emergingMarketsResult, date) : null,
+      semiconductorValue: semiconductorResult ? latestPrice(semiconductorResult, date) : null,
     });
   }
   const final = points.at(-1);

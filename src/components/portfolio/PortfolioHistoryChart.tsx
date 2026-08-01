@@ -8,6 +8,9 @@ interface Point {
   totalProfit: number;
   benchmarkValue: number | null;
   msciWorldValue: number | null;
+  nasdaq100Value: number | null;
+  emergingMarketsValue: number | null;
+  semiconductorValue: number | null;
 }
 interface PerformancePoint extends Point {
   periodProfit: number;
@@ -74,6 +77,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showSp500, setShowSp500] = useState(true);
   const [showMsciWorld, setShowMsciWorld] = useState(true);
+  const [showNasdaq100, setShowNasdaq100] = useState(false);
+  const [showEmergingMarkets, setShowEmergingMarkets] = useState(false);
+  const [showSemiconductor, setShowSemiconductor] = useState(false);
   const visible = useMemo(() => {
     const from = startDate(range, points.at(-1)?.date ?? "1970-01-01");
     return points.filter((point) => point.date >= from && point.netInvestedCapital !== 0);
@@ -87,6 +93,14 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
   const firstMsciWorld = performance.find((point) => point.msciWorldValue !== null)?.msciWorldValue ?? null;
   const activeMsciWorldReturn =
     active?.msciWorldValue != null && firstMsciWorld ? (active.msciWorldValue / firstMsciWorld - 1) * 100 : null;
+  const benchmarkReturn = (key: "nasdaq100Value" | "emergingMarketsValue" | "semiconductorValue") => {
+    const start = performance.find((point) => point[key] !== null)?.[key];
+    const current = active?.[key];
+    return current != null && start ? (current / start - 1) * 100 : null;
+  };
+  const activeNasdaq100Return = benchmarkReturn("nasdaq100Value");
+  const activeEmergingMarketsReturn = benchmarkReturn("emergingMarketsValue");
+  const activeSemiconductorReturn = benchmarkReturn("semiconductorValue");
 
   useEffect(() => {
     const element = container.current;
@@ -172,6 +186,25 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
           ),
         );
       }
+      const addBenchmark = (key: "nasdaq100Value" | "emergingMarketsValue" | "semiconductorValue", color: string) => {
+        const start = performance.find((point) => point[key] !== null)?.[key];
+        if (!start) return;
+        const benchmark = chart.addSeries(LineSeries, {
+          color,
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: true,
+          priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+        });
+        benchmark.setData(
+          performance.flatMap((point) =>
+            point[key] === null ? [] : [{ time: toBusinessDay(point.date), value: (point[key] / start - 1) * 100 }],
+          ),
+        );
+      };
+      if (showNasdaq100) addBenchmark("nasdaq100Value", "#0891b2");
+      if (showEmergingMarkets) addBenchmark("emergingMarketsValue", "#b45309");
+      if (showSemiconductor) addBenchmark("semiconductorValue", "#be185d");
       chart.timeScale().fitContent();
       const move = (event: MouseEventParams) => {
         setSelectedDate(event.time ? dateFromTime(event.time) : null);
@@ -189,7 +222,7 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
       chartRef.current?.remove();
       chartRef.current = null;
     };
-  }, [performance, showMsciWorld, showSp500]);
+  }, [performance, showEmergingMarkets, showMsciWorld, showNasdaq100, showSemiconductor, showSp500]);
 
   return (
     <section aria-labelledby="history-chart-title">
@@ -217,6 +250,15 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
               )}
               {showMsciWorld && activeMsciWorldReturn !== null && (
                 <p className="text-violet-700">MSCI World: {percentage(activeMsciWorldReturn)}</p>
+              )}
+              {showNasdaq100 && activeNasdaq100Return !== null && (
+                <p className="text-cyan-700">Nasdaq 100: {percentage(activeNasdaq100Return)}</p>
+              )}
+              {showEmergingMarkets && activeEmergingMarketsReturn !== null && (
+                <p className="text-amber-700">Emerging Markets: {percentage(activeEmergingMarketsReturn)}</p>
+              )}
+              {showSemiconductor && activeSemiconductorReturn !== null && (
+                <p className="text-pink-700">Semiconductor: {percentage(activeSemiconductorReturn)}</p>
               )}
             </div>
           )}
@@ -265,6 +307,39 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
                   className="size-4 accent-violet-600"
                 />
                 <span className="h-0 w-5 border-t-2 border-violet-700" /> MSCI World
+              </label>
+              <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm font-medium text-cyan-800 hover:bg-cyan-50">
+                <input
+                  type="checkbox"
+                  checked={showNasdaq100}
+                  onChange={(event) => {
+                    setShowNasdaq100(event.target.checked);
+                  }}
+                  className="size-4 accent-cyan-600"
+                />
+                <span className="h-0 w-5 border-t-2 border-cyan-600" /> Nasdaq 100
+              </label>
+              <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm font-medium text-amber-800 hover:bg-amber-50">
+                <input
+                  type="checkbox"
+                  checked={showEmergingMarkets}
+                  onChange={(event) => {
+                    setShowEmergingMarkets(event.target.checked);
+                  }}
+                  className="size-4 accent-amber-600"
+                />
+                <span className="h-0 w-5 border-t-2 border-amber-700" /> Emerging Markets
+              </label>
+              <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm font-medium text-pink-800 hover:bg-pink-50">
+                <input
+                  type="checkbox"
+                  checked={showSemiconductor}
+                  onChange={(event) => {
+                    setShowSemiconductor(event.target.checked);
+                  }}
+                  className="size-4 accent-pink-600"
+                />
+                <span className="h-0 w-5 border-t-2 border-pink-700" /> Semiconductor
               </label>
             </fieldset>
           </div>
