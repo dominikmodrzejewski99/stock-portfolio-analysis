@@ -39,6 +39,7 @@ describe("PortfolioResult", () => {
     expect(html).toContain("22 282,78");
     expect(html).toContain("12,34");
     expect(html).toContain("IKE");
+    expect(html).toContain("Gotówka IKE");
     expect(html).toContain("Rachunek PLN");
   });
 

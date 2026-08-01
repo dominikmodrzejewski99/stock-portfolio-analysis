@@ -23,6 +23,7 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
       totals[product.currency] = (totals[product.currency] ?? 0) + Number(product.profitValue);
       return totals;
     }, {});
+  const ikeCash = result.accounts.flatMap((account) => account.products).find((product) => product.name === "IKE");
 
   return (
     <section aria-labelledby="portfolio-result-heading" className="mt-10">
@@ -68,9 +69,9 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
           </dd>
         </div>
         <div>
-          <dt className="text-sm text-slate-600">Gotówka w planach i IKE</dt>
+          <dt className="text-sm text-slate-600">Gotówka IKE</dt>
           <dd className="mt-2 text-xl font-semibold text-slate-900 tabular-nums">
-            {money(result.otherCashValue, result.baseCurrency)}
+            {ikeCash ? money(ikeCash.cashValue, ikeCash.currency) : money("0", result.baseCurrency)}
           </dd>
         </div>
         <div>
