@@ -32,10 +32,15 @@ function worksheet(rows: string[][]): Uint8Array {
   );
 }
 
-export function createWorkbook(options?: { account?: string; currency?: string; empty?: boolean }): Uint8Array {
+export function createWorkbook(options?: {
+  account?: string;
+  currency?: string;
+  empty?: boolean;
+  cfd?: boolean;
+}): Uint8Array {
   const account = options?.account ?? "10001";
   const currency = options?.currency ?? "PLN";
-  const product = currency === "PLN" ? "IKE" : "My Trades";
+  const product = options?.cfd ? "My Trades" : currency === "PLN" ? "IKE" : "My Trades";
   const empty = options?.empty ?? false;
   const cashRows = [
     ["Account number", account],
@@ -56,8 +61,8 @@ export function createWorkbook(options?: { account?: string; currency?: string; 
     ["Open Positions", ""],
     ["Data as of report generated", "46235.5"],
     ["Product", "Metric", "Amount", "Currency"],
-    [product, "Value", empty ? "0" : "22211.58", product === "IKE" ? "" : currency],
-    [product, "Profit", empty ? "0" : "4112.91", product === "IKE" ? "" : currency],
+    [product, "Value", empty ? "0" : options?.cfd ? "4748.10" : "22211.58", product === "IKE" ? "" : currency],
+    [product, "Profit", empty ? "0" : options?.cfd ? "-726.94" : "4112.91", product === "IKE" ? "" : currency],
     ["Note", "Summary values and open positions are shown as of the report generation time", "", ""],
     [
       "Product",
@@ -85,20 +90,20 @@ export function createWorkbook(options?: { account?: string; currency?: string; 
       : [
           [
             product,
-            "mWIG40TR",
-            "ETFBM40TR.PL",
-            "ETF",
+            options?.cfd ? "CFD position" : "mWIG40TR",
+            options?.cfd ? "CFD.TEST" : "ETFBM40TR.PL",
+            options?.cfd ? "CFD" : "ETF",
             "",
-            "132.7967",
-            "22211.58",
+            options?.cfd ? "1" : "132.7967",
+            options?.cfd ? "4748.10" : "22211.58",
             "",
             "136.29",
             "",
             "",
             "",
-            "22.72",
-            "4112.91",
-            "4112.91",
+            options?.cfd ? "-15.31" : "22.72",
+            options?.cfd ? "-726.94" : "4112.91",
+            options?.cfd ? "-726.94" : "4112.91",
           ],
           [product, "2395604932", "", "", "BUY", "10", "5000", "", "100"],
         ]),

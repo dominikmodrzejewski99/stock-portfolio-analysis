@@ -34,6 +34,14 @@ describe("XTB parser", () => {
     expect(usd?.snapshots[0].securitiesValue.isZero()).toBe(true);
   });
 
+  it("uses CFD profit instead of CFD exposure in portfolio value", () => {
+    const parsed = parseXtbPortfolio(createWorkbook({ cfd: true }), "PLN_report.xlsx");
+
+    expect(parsed.accounts[0].openPositions[0].value.toFixed(2)).toBe("4748.10");
+    expect(parsed.accounts[0].openPositions[0].netProfit?.toFixed(2)).toBe("-726.94");
+    expect(parsed.accounts[0].snapshots[0].securitiesValue.toFixed(2)).toBe("-726.94");
+  });
+
   it("rejects path traversal in an outer ZIP", () => {
     const unsafe = zipSync({ "../report.xlsx": createWorkbook() });
     expect(() => parseXtbPortfolio(unsafe, "unsafe.zip")).toThrow(XtbImportError);

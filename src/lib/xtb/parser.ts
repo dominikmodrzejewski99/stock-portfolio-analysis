@@ -130,6 +130,7 @@ function parseOpenPositions(rows: SheetRow[], accountNumber: string, sourceName:
 function parseSnapshots(
   rows: SheetRow[],
   cashOperations: XtbCashOperation[],
+  openPositions: XtbOpenPosition[],
   accountNumber: string,
   sourceName: string,
 ): XtbProductSnapshot[] {
@@ -156,16 +157,32 @@ function parseSnapshots(
     const product = get(row, headers, "Product");
     if (!product) return [];
     const currency = currencyFrom(get(row, headers, "Currency"), product, sourceName);
+    const reportedValue = parseMoney(get(row, headers, "Amount"), {
+      file: sourceName,
+      sheet: "Open Positions",
+      row: Number(row.__rowNumber),
+    });
+    const cfdPositions = openPositions.filter(
+      (position) => position.product === product && position.category?.trim().toUpperCase() === "CFD",
+    );
+    let portfolioValue = reportedValue;
+    for (const position of cfdPositions) {
+      if (!position.netProfit) {
+        throw new XtbImportError("INVALID_CELL", "Pozycja CFD nie zawiera bieżącego wyniku.", {
+          file: sourceName,
+          sheet: "Open Positions",
+          row: position.sourceRow,
+        });
+      }
+      // XTB's summary Value includes CFD exposure. Account equity contains only CFD P/L.
+      portfolioValue = portfolioValue.minus(position.value).plus(position.netProfit);
+    }
     return [
       {
         accountNumber,
         product,
         currency,
-        securitiesValue: parseMoney(get(row, headers, "Amount"), {
-          file: sourceName,
-          sheet: "Open Positions",
-          row: Number(row.__rowNumber),
-        }),
+        securitiesValue: portfolioValue,
         reconstructedCash: cashByProduct.get(product) ?? new Decimal(0),
         valuationAt,
       },
@@ -198,8 +215,8 @@ function parseWorkbook(bytes: Uint8Array, sourceName: string): XtbAccountReport 
   const reportFrom = excelSerialToIso(reportFromSerial, { file: sourceName, sheet: "Cash Operations" });
   const reportTo = excelSerialToIso(reportToSerial, { file: sourceName, sheet: "Cash Operations" });
   const cashOperations = parseCashOperations(cashRows, accountNumber, sourceName);
-  const snapshots = parseSnapshots(openRows, cashOperations, accountNumber, sourceName);
   const openPositions = parseOpenPositions(openRows, accountNumber, sourceName);
+  const snapshots = parseSnapshots(openRows, cashOperations, openPositions, accountNumber, sourceName);
   const currency = snapshots[0]?.currency ?? currencyFrom(undefined, "", sourceName);
   const firstOperation = cashOperations.reduce<string | null>(
     (earliest, operation) => (!earliest || operation.occurredAt < earliest ? operation.occurredAt : earliest),
