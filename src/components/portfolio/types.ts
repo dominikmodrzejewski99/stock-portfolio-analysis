@@ -11,6 +11,7 @@ export interface PortfolioProductResult {
   currency: BaseCurrency;
   securitiesValue: string;
   cashValue: string;
+  marginValue: string;
 }
 
 export interface PortfolioImportResult {
@@ -19,6 +20,7 @@ export interface PortfolioImportResult {
   valuationDate: string;
   securitiesValue: string;
   cashValue: string;
+  marginValue: string;
   totalValue: string;
   xirr: string | null;
   diagnostics: ImportDiagnostic[];

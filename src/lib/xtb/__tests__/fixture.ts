@@ -104,6 +104,7 @@ export function createWorkbook(options?: {
             options?.cfd ? "-15.31" : "22.72",
             options?.cfd ? "-726.94" : "4112.91",
             options?.cfd ? "-726.94" : "4112.91",
+            options?.cfd ? "2591.70" : "0",
           ],
           [product, "2395604932", "", "", "BUY", "10", "5000", "", "100"],
         ]),

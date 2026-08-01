@@ -39,7 +39,9 @@ describe("XTB parser", () => {
 
     expect(parsed.accounts[0].openPositions[0].value.toFixed(2)).toBe("4748.10");
     expect(parsed.accounts[0].openPositions[0].netProfit?.toFixed(2)).toBe("-726.94");
-    expect(parsed.accounts[0].snapshots[0].securitiesValue.toFixed(2)).toBe("-726.94");
+    expect(parsed.accounts[0].snapshots[0].securitiesValue.toFixed(2)).toBe("0.00");
+    expect(parsed.accounts[0].snapshots[0].cfdProfit.toFixed(2)).toBe("-726.94");
+    expect(parsed.accounts[0].snapshots[0].marginValue.toFixed(2)).toBe("2591.70");
   });
 
   it("rejects path traversal in an outer ZIP", () => {

@@ -36,7 +36,7 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
         </p>
       </div>
 
-      <dl className="grid gap-x-10 gap-y-7 py-8 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="grid gap-x-8 gap-y-7 py-8 sm:grid-cols-2 lg:grid-cols-5">
         <div>
           <dt className="flex items-center gap-2 text-sm text-slate-600">
             <WalletCards aria-hidden="true" className="size-4" /> Łączna wartość
@@ -55,10 +55,16 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
         </div>
         <div>
           <dt className="flex items-center gap-2 text-sm text-slate-600">
-            <ReceiptText aria-hidden="true" className="size-4" /> Wolna gotówka
+            <ReceiptText aria-hidden="true" className="size-4" /> Wolne środki
           </dt>
           <dd className="mt-2 text-xl font-semibold text-slate-900 tabular-nums">
             {money(result.cashValue, result.baseCurrency)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-sm text-slate-600">Depozyt zabezpieczający</dt>
+          <dd className="mt-2 text-xl font-semibold text-slate-900 tabular-nums">
+            {money(result.marginValue, result.baseCurrency)}
           </dd>
         </div>
         <div>
@@ -103,9 +109,10 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
                 <p className="text-sm text-slate-700 tabular-nums">
                   Instrumenty: {money(product.securitiesValue, product.currency)}
                 </p>
-                <p className="text-sm text-slate-700 tabular-nums">
-                  Gotówka: {money(product.cashValue, product.currency)}
-                </p>
+                <div className="text-sm text-slate-700 tabular-nums">
+                  <p>Wolne środki: {money(product.cashValue, product.currency)}</p>
+                  {Number(product.marginValue) !== 0 && <p>Depozyt: {money(product.marginValue, product.currency)}</p>}
+                </div>
               </div>
             )),
           )}

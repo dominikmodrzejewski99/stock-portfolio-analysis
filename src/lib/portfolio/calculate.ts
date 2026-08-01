@@ -11,6 +11,7 @@ export interface PortfolioCalculation {
   valuationDate: string;
   securitiesValue: Decimal;
   cashValue: Decimal;
+  marginValue: Decimal;
   totalValue: Decimal;
   xirr: Decimal | null;
   cashFlows: MoneyCashFlow[];
@@ -79,19 +80,28 @@ export async function calculatePortfolio(
 
   let securitiesValue = new Decimal(0);
   let cashValue = new Decimal(0);
+  let marginValue = new Decimal(0);
   let valuationDate = "";
   for (const account of portfolio.accounts) {
     for (const snapshot of account.snapshots) {
       const date = snapshot.valuationAt.slice(0, 10);
       if (date > valuationDate) valuationDate = date;
       const securities = await convertMoney(snapshot.securitiesValue, snapshot.currency, baseCurrency, date, provider);
-      const cash = await convertMoney(snapshot.reconstructedCash, snapshot.currency, baseCurrency, date, provider);
+      const freeFunds = await convertMoney(
+        snapshot.reconstructedCash.plus(snapshot.cfdProfit).minus(snapshot.marginValue),
+        snapshot.currency,
+        baseCurrency,
+        date,
+        provider,
+      );
+      const margin = await convertMoney(snapshot.marginValue, snapshot.currency, baseCurrency, date, provider);
       securitiesValue = securitiesValue.plus(securities.amount);
-      cashValue = cashValue.plus(cash.amount);
-      quoteAudit.push(...securities.quotes, ...cash.quotes);
+      cashValue = cashValue.plus(freeFunds.amount);
+      marginValue = marginValue.plus(margin.amount);
+      quoteAudit.push(...securities.quotes, ...freeFunds.quotes, ...margin.quotes);
     }
   }
-  const totalValue = securitiesValue.plus(cashValue);
+  const totalValue = securitiesValue.plus(cashValue).plus(marginValue);
   const endingFlow: MoneyCashFlow = { date: valuationDate, amount: totalValue, sourceOperationIds: [] };
   const cashFlows = [...flowByDate.values(), endingFlow].sort((left, right) => left.date.localeCompare(right.date));
 
@@ -110,6 +120,7 @@ export async function calculatePortfolio(
     valuationDate,
     securitiesValue,
     cashValue,
+    marginValue,
     totalValue,
     xirr,
     cashFlows,

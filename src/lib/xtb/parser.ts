@@ -120,6 +120,7 @@ function parseOpenPositions(rows: SheetRow[], accountNumber: string, sourceName:
         openPrice: optionalDecimal(get(row, headers, "Open price")),
         netProfitPercent: optionalDecimal(get(row, headers, "Net Profit %")),
         netProfit: optionalDecimal(get(row, headers, "Net Profit")),
+        margin: optionalDecimal(get(row, headers, "Margin")),
         positionId: null,
         sourceRow: Number(row.__rowNumber),
       },
@@ -165,25 +166,31 @@ function parseSnapshots(
     const cfdPositions = openPositions.filter(
       (position) => position.product === product && position.category?.trim().toUpperCase() === "CFD",
     );
-    let portfolioValue = reportedValue;
+    let securitiesValue = reportedValue;
+    let cfdProfit = new Decimal(0);
+    let marginValue = new Decimal(0);
     for (const position of cfdPositions) {
-      if (!position.netProfit) {
-        throw new XtbImportError("INVALID_CELL", "Pozycja CFD nie zawiera bieżącego wyniku.", {
+      if (!position.netProfit || !position.margin) {
+        throw new XtbImportError("INVALID_CELL", "Pozycja CFD nie zawiera bieżącego wyniku lub depozytu.", {
           file: sourceName,
           sheet: "Open Positions",
           row: position.sourceRow,
         });
       }
-      // XTB's summary Value includes CFD exposure. Account equity contains only CFD P/L.
-      portfolioValue = portfolioValue.minus(position.value).plus(position.netProfit);
+      // CFD exposure is not owned capital. Equity consists of non-CFD assets, balance and CFD P/L.
+      securitiesValue = securitiesValue.minus(position.value);
+      cfdProfit = cfdProfit.plus(position.netProfit);
+      marginValue = marginValue.plus(position.margin);
     }
     return [
       {
         accountNumber,
         product,
         currency,
-        securitiesValue: portfolioValue,
+        securitiesValue,
         reconstructedCash: cashByProduct.get(product) ?? new Decimal(0),
+        cfdProfit,
+        marginValue,
         valuationAt,
       },
     ];

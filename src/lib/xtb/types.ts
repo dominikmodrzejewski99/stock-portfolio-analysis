@@ -29,6 +29,7 @@ export interface XtbOpenPosition {
   openPrice: Decimal | null;
   netProfitPercent: Decimal | null;
   netProfit: Decimal | null;
+  margin: Decimal | null;
   positionId: string | null;
   sourceRow: number;
 }
@@ -39,6 +40,8 @@ export interface XtbProductSnapshot {
   currency: PortfolioCurrency;
   securitiesValue: Decimal;
   reconstructedCash: Decimal;
+  cfdProfit: Decimal;
+  marginValue: Decimal;
   valuationAt: string;
 }
 

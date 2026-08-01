@@ -9,13 +9,14 @@ const result: PortfolioImportResult = {
   valuationDate: "2026-08-01",
   securitiesValue: "22211.58",
   cashValue: "71.20",
+  marginValue: "0",
   totalValue: "22282.78",
   xirr: "0.1234",
   diagnostics: [],
   accounts: [
     {
       currency: "PLN",
-      products: [{ name: "IKE", currency: "PLN", securitiesValue: "22211.58", cashValue: "71.20" }],
+      products: [{ name: "IKE", currency: "PLN", securitiesValue: "22211.58", cashValue: "71.20", marginValue: "0" }],
     },
   ],
   externalCashFlows: [{ date: "2025-01-01", amount: "-10000" }],
