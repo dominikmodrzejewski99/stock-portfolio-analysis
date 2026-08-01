@@ -1,27 +1,44 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import ImportPortfolioForm from "@/components/portfolio/ImportPortfolioForm";
+import { LogOut, ShieldCheck } from "lucide-react";
 
 const { user } = Astro.locals;
 ---
 
-<Layout title="Mój portfel">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
-      <h1 class="mb-4 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
-        Mój portfel
-      </h1>
-      <p class="text-blue-100/80">
-        Zalogowano jako <span class="font-semibold text-white">{user?.email}</span>
-      </p>
-      <p class="mt-2 text-sm text-blue-100/50">To jest prywatny obszar właściciela.</p>
-      <form method="POST" action="/api/auth/signout" class="mt-6">
-        <button
-          type="submit"
-          class="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
-        >
-          Wyloguj się
-        </button>
-      </form>
-    </div>
+<Layout title="MyPortfelik, analiza portfela">
+  <div class="min-h-screen bg-[oklch(0.975_0.008_85)] text-slate-950">
+    <header class="border-b border-slate-200/90 bg-[oklch(0.99_0.006_85)]">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+        <a href="/dashboard" class="text-lg font-semibold tracking-tight text-slate-950">MyPortfelik</a>
+        <div class="flex items-center gap-4">
+          <span class="hidden text-sm text-slate-600 sm:inline">{user?.email}</span>
+          <form method="POST" action="/api/auth/signout">
+            <button
+              type="submit"
+              class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700"
+            >
+              <LogOut aria-hidden="true" class="size-4" />
+              <span class="hidden sm:inline">Wyloguj się</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
+      <div class="max-w-3xl">
+        <div class="mb-4 flex items-center gap-2 text-sm font-medium text-indigo-800">
+          <ShieldCheck aria-hidden="true" class="size-4" /> Prywatna analiza, plik nie jest przechowywany
+        </div>
+        <h1 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Sprawdź wynik całego portfela</h1>
+        <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+          Zaimportuj pełny raport XTB. Połączymy rachunki i plany, przeliczymy waluty oraz oddzielimy wpłaty od wyniku
+          inwestycji.
+        </p>
+      </div>
+
+      <ImportPortfolioForm client:load />
+    </main>
   </div>
 </Layout>

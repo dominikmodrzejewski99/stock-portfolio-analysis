@@ -348,25 +348,25 @@ To pierwszy schemat domenowy; migracja nie przenosi istniejących danych. Przed 
 
 #### Automated
 
-- [x] 3.1 Migracja stosuje się na czystej bazie
-- [x] 3.2 Testy RLS, atomowości i idempotencji przechodzą
-- [x] 3.3 Nieautoryzowany import jest odrzucany
-- [x] 3.4 Końcowe kontrole jakości przechodzą
+- [x] 3.1 Migracja stosuje się na czystej bazie — 22c4d18
+- [x] 3.2 Testy RLS, atomowości i idempotencji przechodzą — 22c4d18
+- [x] 3.3 Nieautoryzowany import jest odrzucany — 22c4d18
+- [x] 3.4 Końcowe kontrole jakości przechodzą — 22c4d18
 
 #### Manual
 
-- [x] 3.5 Reimport nie tworzy duplikatów
-- [x] 3.6 Błąd rachunku nie pozostawia częściowego importu
+- [x] 3.5 Reimport nie tworzy duplikatów — 22c4d18
+- [x] 3.6 Błąd rachunku nie pozostawia częściowego importu — 22c4d18
 
 ### Phase 4: Dashboard importu i wyniku
 
 #### Automated
 
-- [ ] 4.1 Testy komponentów i pełnego przepływu przechodzą
-- [ ] 4.2 Import reprezentatywny trwa krócej niż 5 sekund
-- [ ] 4.3 Końcowe kontrole jakości przechodzą
+- [x] 4.1 Testy komponentów i pełnego przepływu przechodzą
+- [x] 4.2 Import reprezentatywny trwa krócej niż 5 sekund
+- [x] 4.3 Końcowe kontrole jakości przechodzą
 
 #### Manual
 
-- [ ] 4.4 Właściciel przechodzi od logowania do wyniku
-- [ ] 4.5 Wynik i błędy są czytelne na telefonie i desktopie
+- [x] 4.4 Właściciel przechodzi od logowania do wyniku
+- [x] 4.5 Wynik i błędy są czytelne na telefonie i desktopie
