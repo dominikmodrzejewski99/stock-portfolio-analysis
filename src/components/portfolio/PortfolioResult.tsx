@@ -225,8 +225,9 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
         >
           <p className="font-semibold">Część starszej historii jest przybliżona</p>
           <p className="mt-1 leading-6">
-            Źródło notowań nie zwróciło cen dla: {result.history.unavailableTickers.join(", ")}. Okresy, w których te
-            instrumenty były w portfelu, nie zawierają ich wyceny. Ostatni punkt pozostaje zgodny z raportem XTB.
+            Źródło notowań nie zwróciło cen dla: {result.history.unavailableTickers.join(", ")}. W okresach, w których
+            te instrumenty były w portfelu, użyto ceny zakupu zamiast zerowej wartości. Ostatni punkt pozostaje zgodny z
+            raportem XTB.
           </p>
         </div>
       )}

@@ -99,10 +99,12 @@ export async function reconstructHistory(
     let instruments = new Decimal(0);
     for (const lot of lots.filter((item) => active(item, date))) {
       const priceSeries = series.get(lot.ticker);
-      if (!priceSeries || !["PLN", "EUR", "USD"].includes(priceSeries.currency)) continue;
-      const close = latestPrice(priceSeries, date);
-      if (!close) continue;
-      const currency = priceSeries.currency as PortfolioCurrency;
+      const hasSupportedSeries = priceSeries && ["PLN", "EUR", "USD"].includes(priceSeries.currency);
+      const marketClose = hasSupportedSeries ? latestPrice(priceSeries, date) : null;
+      // A missing external quote must not turn a purchase into an artificial loss.
+      // Cost basis is the conservative fallback and remains explicitly disclosed in diagnostics.
+      const close = marketClose ?? lot.openPrice;
+      const currency = hasSupportedSeries ? (priceSeries.currency as PortfolioCurrency) : lot.accountCurrency;
       if (lot.category.trim().toUpperCase() === "CFD") {
         const direction = lot.type.trim().toLowerCase().includes("sell") ? -1 : 1;
         instruments = instruments.plus(

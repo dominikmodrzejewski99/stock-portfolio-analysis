@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calculatePeriodPerformance } from "../PortfolioHistoryChart";
 
 describe("calculatePeriodPerformance", () => {
-  it("excludes deposits from profit and compounds daily returns", () => {
+  it("excludes deposits from profit and includes them in working capital", () => {
     const result = calculatePeriodPerformance([
       { date: "2026-01-01", totalValue: 100, netInvestedCapital: 100, totalProfit: 0 },
       { date: "2026-01-02", totalValue: 110, netInvestedCapital: 100, totalProfit: 10 },
@@ -10,7 +10,7 @@ describe("calculatePeriodPerformance", () => {
     ]);
 
     expect(result.at(-1)?.periodProfit).toBe(15);
-    expect(result.at(-1)?.periodReturn).toBeCloseTo(15, 8);
+    expect(result.at(-1)?.periodReturn).toBeCloseTo(10, 8);
   });
 
   it("starts every selected range at zero", () => {

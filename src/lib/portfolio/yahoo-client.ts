@@ -12,7 +12,11 @@ export interface PriceSeries {
   prices: DailyPrice[];
 }
 
-const SYMBOL_OVERRIDES: Record<string, string> = { "AMZN.DE": "AMZ.DE" };
+const SYMBOL_OVERRIDES: Record<string, string> = {
+  "AMZN.DE": "AMZ.DE",
+  "LTAM.NL": "LTAM.AS",
+  "DAXEX.DE": "EXS1.DE",
+};
 
 export function yahooSymbol(ticker: string): string {
   if (SYMBOL_OVERRIDES[ticker]) return SYMBOL_OVERRIDES[ticker];

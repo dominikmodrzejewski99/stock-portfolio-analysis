@@ -48,19 +48,19 @@ function dateFromTime(time: Time): string {
 
 export function calculatePeriodPerformance(visible: Point[]): PerformancePoint[] {
   const first = visible[0];
-  let compounded = 1;
   let cumulativeFlows = 0;
   return visible.map((point, index) => {
     if (index > 0) {
       const previous = visible[index - 1];
       const flow = point.netInvestedCapital - previous.netInvestedCapital;
       cumulativeFlows += flow;
-      if (previous.totalValue !== 0) compounded *= (point.totalValue - flow) / previous.totalValue;
     }
+    const periodProfit = point.totalValue - first.totalValue - cumulativeFlows;
+    const workingCapital = first.totalValue + Math.max(cumulativeFlows, 0);
     return {
       ...point,
-      periodProfit: point.totalValue - first.totalValue - cumulativeFlows,
-      periodReturn: (compounded - 1) * 100,
+      periodProfit,
+      periodReturn: workingCapital > 0 ? (periodProfit / workingCapital) * 100 : 0,
     };
   });
 }
@@ -192,7 +192,7 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
       {visible.length > 1 ? (
         <div className="mt-7">
           <p className="mb-2 text-xs font-medium tracking-wide text-slate-500 uppercase">
-            Stopa zwrotu za wybrany okres
+            Prosty wynik za wybrany okres
           </p>
           <div
             ref={container}
@@ -209,6 +209,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
             </span>
             <span className="text-xs">Oś X: data · Oś Y: wynik procentowy</span>
           </div>
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Wynik uwzględnia zmianę wartości portfela oraz wpłaty i wypłaty wykonane w wybranym okresie.
+          </p>
           <p className="mt-3 text-xs text-slate-500">
             Wykres wykorzystuje{" "}
             <a
