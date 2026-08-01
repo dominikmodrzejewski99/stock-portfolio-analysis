@@ -6,6 +6,7 @@ interface Point {
   totalValue: number;
   netInvestedCapital: number;
   totalProfit: number;
+  benchmarkValue: number | null;
 }
 interface PerformancePoint extends Point {
   periodProfit: number;
@@ -77,6 +78,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
   const performance = useMemo(() => calculatePeriodPerformance(visible), [visible]);
   const active = performance.find((point) => point.date === selectedDate) ?? performance.at(-1);
   const activeReturn = active?.periodReturn ?? 0;
+  const firstBenchmark = performance.find((point) => point.benchmarkValue !== null)?.benchmarkValue ?? null;
+  const activeBenchmarkReturn =
+    active?.benchmarkValue != null && firstBenchmark ? (active.benchmarkValue / firstBenchmark - 1) * 100 : null;
 
   useEffect(() => {
     const element = container.current;
@@ -84,60 +88,80 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
     let disposed = false;
     let observer: ResizeObserver | undefined;
 
-    void import("lightweight-charts").then(({ BaselineSeries, ColorType, CrosshairMode, createChart }) => {
-      if (disposed) return;
-      const chart = createChart(element, {
-        width: element.clientWidth,
-        height: 430,
-        autoSize: false,
-        layout: {
-          background: { type: ColorType.Solid, color: "transparent" },
-          textColor: "#64748b",
-          attributionLogo: false,
-          fontFamily: "ui-sans-serif, system-ui, sans-serif",
-          fontSize: 13,
-        },
-        grid: {
-          vertLines: { color: "#f1f5f9" },
-          horzLines: { color: "#e2e8f0" },
-        },
-        crosshair: { mode: CrosshairMode.Normal },
-        rightPriceScale: { borderColor: "#cbd5e1", minimumWidth: 72, scaleMargins: { top: 0.1, bottom: 0.1 } },
-        timeScale: { borderColor: "#cbd5e1", timeVisible: false, rightOffset: 1, barSpacing: 6 },
-        localization: { locale: "pl-PL" },
-      });
-      chartRef.current = chart;
-      const series = chart.addSeries(BaselineSeries, {
-        baseValue: { type: "price", price: 0 },
-        topLineColor: "#047857",
-        topFillColor1: "rgba(4, 120, 87, 0.24)",
-        topFillColor2: "rgba(4, 120, 87, 0.03)",
-        bottomLineColor: "#b91c1c",
-        bottomFillColor1: "rgba(185, 28, 28, 0.03)",
-        bottomFillColor2: "rgba(185, 28, 28, 0.22)",
-        lineWidth: 3,
-        priceLineVisible: true,
-        priceLineColor: "#64748b",
-        priceLineWidth: 1,
-        lastValueVisible: true,
-        priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
-      });
-      series.setData(
-        performance.map((point) => ({
-          time: toBusinessDay(point.date),
-          value: point.periodReturn,
-        })),
-      );
-      chart.timeScale().fitContent();
-      const move = (event: MouseEventParams) => {
-        setSelectedDate(event.time ? dateFromTime(event.time) : null);
-      };
-      chart.subscribeCrosshairMove(move);
-      observer = new ResizeObserver(() => {
-        chart.applyOptions({ width: element.clientWidth });
-      });
-      observer.observe(element);
-    });
+    void import("lightweight-charts").then(
+      ({ BaselineSeries, ColorType, CrosshairMode, LineSeries, LineStyle, createChart }) => {
+        if (disposed) return;
+        const chart = createChart(element, {
+          width: element.clientWidth,
+          height: 430,
+          autoSize: false,
+          layout: {
+            background: { type: ColorType.Solid, color: "transparent" },
+            textColor: "#64748b",
+            attributionLogo: false,
+            fontFamily: "ui-sans-serif, system-ui, sans-serif",
+            fontSize: 13,
+          },
+          grid: {
+            vertLines: { color: "#f1f5f9" },
+            horzLines: { color: "#e2e8f0" },
+          },
+          crosshair: { mode: CrosshairMode.Normal },
+          rightPriceScale: { borderColor: "#cbd5e1", minimumWidth: 72, scaleMargins: { top: 0.1, bottom: 0.1 } },
+          timeScale: { borderColor: "#cbd5e1", timeVisible: false, rightOffset: 1, barSpacing: 6 },
+          localization: { locale: "pl-PL" },
+        });
+        chartRef.current = chart;
+        const series = chart.addSeries(BaselineSeries, {
+          baseValue: { type: "price", price: 0 },
+          topLineColor: "#047857",
+          topFillColor1: "rgba(4, 120, 87, 0.24)",
+          topFillColor2: "rgba(4, 120, 87, 0.03)",
+          bottomLineColor: "#b91c1c",
+          bottomFillColor1: "rgba(185, 28, 28, 0.03)",
+          bottomFillColor2: "rgba(185, 28, 28, 0.22)",
+          lineWidth: 3,
+          priceLineVisible: true,
+          priceLineColor: "#64748b",
+          priceLineWidth: 1,
+          lastValueVisible: true,
+          priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+        });
+        series.setData(
+          performance.map((point) => ({
+            time: toBusinessDay(point.date),
+            value: point.periodReturn,
+          })),
+        );
+        const benchmarkStart = performance.find((point) => point.benchmarkValue !== null)?.benchmarkValue ?? null;
+        if (benchmarkStart) {
+          const benchmark = chart.addSeries(LineSeries, {
+            color: "#475569",
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            priceLineVisible: false,
+            lastValueVisible: true,
+            priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+          });
+          benchmark.setData(
+            performance.flatMap((point) =>
+              point.benchmarkValue === null
+                ? []
+                : [{ time: toBusinessDay(point.date), value: (point.benchmarkValue / benchmarkStart - 1) * 100 }],
+            ),
+          );
+        }
+        chart.timeScale().fitContent();
+        const move = (event: MouseEventParams) => {
+          setSelectedDate(event.time ? dateFromTime(event.time) : null);
+        };
+        chart.subscribeCrosshairMove(move);
+        observer = new ResizeObserver(() => {
+          chart.applyOptions({ width: element.clientWidth });
+        });
+        observer.observe(element);
+      },
+    );
 
     return () => {
       disposed = true;
@@ -164,11 +188,14 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
             {active ? money(active.totalValue, currency) : "Brak danych"}
           </h2>
           {active && (
-            <p
-              className={`mt-1 text-sm font-semibold tabular-nums ${activeReturn >= 0 ? "text-emerald-700" : "text-red-700"}`}
-            >
-              Wynik za okres: {money(active.periodProfit, currency)} ({percentage(activeReturn)})
-            </p>
+            <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold tabular-nums">
+              <p className={activeReturn >= 0 ? "text-emerald-700" : "text-red-700"}>
+                Portfel: {money(active.periodProfit, currency)} ({percentage(activeReturn)})
+              </p>
+              {activeBenchmarkReturn !== null && (
+                <p className="text-slate-600">S&amp;P 500 TR: {percentage(activeBenchmarkReturn)}</p>
+              )}
+            </div>
           )}
         </div>
         <div className="flex flex-wrap gap-1" aria-label="Zakres wykresu">
@@ -208,6 +235,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
               <span className="size-2.5 rounded-full bg-red-700" /> Strata, poniżej 0%
             </span>
             <span className="text-xs">Oś X: data · Oś Y: wynik procentowy</span>
+            <span className="flex items-center gap-2">
+              <span className="w-6 border-t-2 border-dashed border-slate-600" /> S&amp;P 500 Total Return
+            </span>
           </div>
           <p className="mt-2 text-xs leading-5 text-slate-500">
             Wynik uwzględnia zmianę wartości portfela oraz wpłaty i wypłaty wykonane w wybranym okresie.

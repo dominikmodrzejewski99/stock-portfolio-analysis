@@ -93,6 +93,7 @@ export async function savePortfolioHistory(
     total_value: point.totalValue.toString(),
     net_invested_capital: point.netInvestedCapital.toString(),
     total_profit: point.totalProfit.toString(),
+    benchmark_value: point.benchmarkValue?.toString() ?? null,
   }));
   for (let index = 0; index < rows.length; index += 500) {
     const { error } = await client.from("portfolio_history_points").upsert(rows.slice(index, index + 500), {

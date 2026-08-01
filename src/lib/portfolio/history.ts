@@ -9,6 +9,7 @@ export interface HistoryPoint {
   totalValue: Decimal;
   netInvestedCapital: Decimal;
   totalProfit: Decimal;
+  benchmarkValue: Decimal | null;
 }
 
 export interface HistoryResult {
@@ -59,6 +60,7 @@ export async function reconstructHistory(
   const settled = await Promise.allSettled(
     tickers.map((ticker) => prices.getDaily(ticker, earliest, calculation.valuationDate)),
   );
+  const benchmarkResult = await prices.getDaily("^SP500TR", earliest, calculation.valuationDate).catch(() => null);
   const series = new Map<string, PriceSeries>();
   const unavailableTickers: string[] = [];
   settled.forEach((result, index) => {
@@ -115,7 +117,13 @@ export async function reconstructHistory(
       }
     }
     const totalValue = cash.plus(instruments);
-    points.push({ date, totalValue, netInvestedCapital: netCapital, totalProfit: totalValue.minus(netCapital) });
+    points.push({
+      date,
+      totalValue,
+      netInvestedCapital: netCapital,
+      totalProfit: totalValue.minus(netCapital),
+      benchmarkValue: benchmarkResult ? latestPrice(benchmarkResult, date) : null,
+    });
   }
   const final = points.at(-1);
   if (final) {
