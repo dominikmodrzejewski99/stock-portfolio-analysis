@@ -21,6 +21,20 @@ export interface HistoryResult {
   unavailableTickers: string[];
 }
 
+const MAX_MARKET_HISTORY_TICKERS = 24;
+
+export function selectHistoryTickers(lots: XtbPositionLot[], limit = MAX_MARKET_HISTORY_TICKERS): string[] {
+  const exposure = new Map<string, Decimal>();
+  for (const lot of lots) {
+    const cost = lot.openPrice.times(lot.volume).abs();
+    exposure.set(lot.ticker, (exposure.get(lot.ticker) ?? new Decimal(0)).plus(cost));
+  }
+  return [...exposure.entries()]
+    .sort((left, right) => right[1].comparedTo(left[1]))
+    .slice(0, limit)
+    .map(([ticker]) => ticker);
+}
+
 function dateOf(value: string): string {
   return value.slice(0, 10);
 }
@@ -60,7 +74,8 @@ export async function reconstructHistory(
     ...lots.map((item) => dateOf(item.openAt)),
   ].sort()[0];
   if (!earliest) return { points: [], unavailableTickers: [] };
-  const tickers = [...new Set(lots.map((lot) => lot.ticker))];
+  const allTickers = [...new Set(lots.map((lot) => lot.ticker))];
+  const tickers = selectHistoryTickers(lots);
   const settled = await Promise.allSettled(
     tickers.map((ticker) => prices.getDaily(ticker, earliest, calculation.valuationDate)),
   );
@@ -72,7 +87,7 @@ export async function reconstructHistory(
     prices.getDaily("SMH.L", earliest, calculation.valuationDate).catch(() => null),
   ]);
   const series = new Map<string, PriceSeries>();
-  const unavailableTickers: string[] = [];
+  const unavailableTickers: string[] = allTickers.filter((ticker) => !tickers.includes(ticker));
   settled.forEach((result, index) => {
     if (result.status === "fulfilled") series.set(tickers[index], result.value);
     else unavailableTickers.push(tickers[index]);

@@ -8,6 +8,8 @@ import { pairTransfers } from "../transfers";
 import type { FxProvider, FxQuote, MoneyCashFlow } from "../types";
 import { calculateXirr, XirrError } from "../xirr";
 import { calculateCapitalResult } from "../calculate";
+import { selectHistoryTickers } from "../history";
+import type { XtbPositionLot } from "@/lib/xtb/types";
 
 function operation(overrides: Partial<XtbCashOperation>): XtbCashOperation {
   return {
@@ -199,5 +201,30 @@ describe("capital result", () => {
     expect(result.netInvestedCapital.toFixed(2)).toBe("1000.00");
     expect(result.totalProfit.toFixed(2)).toBe("250.00");
     expect(result.simpleReturn?.toFixed(4)).toBe("0.2500");
+  });
+});
+
+describe("history ticker budget", () => {
+  it("prioritizes the instruments with the largest cost exposure", () => {
+    const lot = (ticker: string, volume: number, openPrice: number): XtbPositionLot => ({
+      accountNumber: "1",
+      product: "My Trades",
+      instrument: ticker,
+      ticker,
+      category: "STC",
+      type: "BUY",
+      volume: new Decimal(volume),
+      openPrice: new Decimal(openPrice),
+      openAt: "2025-01-01T00:00:00.000Z",
+      closePrice: null,
+      closeAt: null,
+      positionId: ticker,
+      sourceRow: 1,
+    });
+
+    expect(selectHistoryTickers([lot("SMALL", 1, 10), lot("BIG", 3, 100), lot("MEDIUM", 2, 50)], 2)).toEqual([
+      "BIG",
+      "MEDIUM",
+    ]);
   });
 });

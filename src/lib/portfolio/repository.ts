@@ -99,8 +99,8 @@ export async function savePortfolioHistory(
     emerging_markets_value: point.emergingMarketsValue?.toString() ?? null,
     semiconductor_value: point.semiconductorValue?.toString() ?? null,
   }));
-  for (let index = 0; index < rows.length; index += 500) {
-    const { error } = await client.from("portfolio_history_points").upsert(rows.slice(index, index + 500), {
+  for (let index = 0; index < rows.length; index += 2000) {
+    const { error } = await client.from("portfolio_history_points").upsert(rows.slice(index, index + 2000), {
       onConflict: "owner_id,date,base_currency",
     });
     if (error) throw new Error(`Nie udało się zapisać historii portfela: ${error.message}`);
