@@ -2,6 +2,7 @@
 import Layout from "@/layouts/Layout.astro";
 import PortfolioHistoryChart from "@/components/portfolio/PortfolioHistoryChart";
 import { createClient } from "@/lib/supabase";
+import { YahooPriceClient, type DailyPrice } from "@/lib/portfolio/yahoo-client";
 import { ArrowLeft, History } from "lucide-react";
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
@@ -11,13 +12,37 @@ const { data } = supabase
       .select("date,total_value,net_invested_capital,total_profit,benchmark_value,msci_world_value,base_currency")
       .order("date")
   : { data: null };
-const points = (data ?? []).map((row) => ({
+const rows = data ?? [];
+let sp500Fallback: DailyPrice[] = [];
+let msciWorldFallback: DailyPrice[] = [];
+const firstDate = rows[0]?.date == null ? null : String(rows[0].date);
+const lastDate = rows.at(-1)?.date == null ? null : String(rows.at(-1)?.date);
+if (firstDate && lastDate && rows.some((row) => row.benchmark_value == null || row.msci_world_value == null)) {
+  const priceClient = new YahooPriceClient();
+  const [sp500, msciWorld] = await Promise.all([
+    priceClient.getDaily("^SP500TR", firstDate, lastDate).catch(() => null),
+    priceClient.getDaily("IWDA.L", firstDate, lastDate).catch(() => null),
+  ]);
+  sp500Fallback = sp500?.prices ?? [];
+  msciWorldFallback = msciWorld?.prices ?? [];
+}
+function priceOnOrBefore(prices: DailyPrice[], date: string): number | null {
+  let value: number | null = null;
+  for (const price of prices) {
+    if (price.date > date) break;
+    value = price.close.toNumber();
+  }
+  return value;
+}
+const points = rows.map((row) => ({
   date: String(row.date),
   totalValue: Number(row.total_value),
   netInvestedCapital: Number(row.net_invested_capital),
   totalProfit: Number(row.total_profit),
-  benchmarkValue: row.benchmark_value == null ? null : Number(row.benchmark_value),
-  msciWorldValue: row.msci_world_value == null ? null : Number(row.msci_world_value),
+  benchmarkValue:
+    row.benchmark_value == null ? priceOnOrBefore(sp500Fallback, String(row.date)) : Number(row.benchmark_value),
+  msciWorldValue:
+    row.msci_world_value == null ? priceOnOrBefore(msciWorldFallback, String(row.date)) : Number(row.msci_world_value),
 }));
 const currency = String(data?.at(-1)?.base_currency ?? "PLN");
 ---

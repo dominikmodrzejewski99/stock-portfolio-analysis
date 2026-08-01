@@ -94,98 +94,94 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
     let disposed = false;
     let observer: ResizeObserver | undefined;
 
-    void import("lightweight-charts").then(
-      ({ BaselineSeries, ColorType, CrosshairMode, LineSeries, LineStyle, createChart }) => {
-        if (disposed) return;
-        const chart = createChart(element, {
-          width: element.clientWidth,
-          height: 430,
-          autoSize: false,
-          layout: {
-            background: { type: ColorType.Solid, color: "transparent" },
-            textColor: "#64748b",
-            attributionLogo: false,
-            fontFamily: "ui-sans-serif, system-ui, sans-serif",
-            fontSize: 13,
-          },
-          grid: {
-            vertLines: { color: "#f1f5f9" },
-            horzLines: { color: "#e2e8f0" },
-          },
-          crosshair: { mode: CrosshairMode.Normal },
-          rightPriceScale: { borderColor: "#cbd5e1", minimumWidth: 72, scaleMargins: { top: 0.1, bottom: 0.1 } },
-          timeScale: { borderColor: "#cbd5e1", timeVisible: false, rightOffset: 1, barSpacing: 6 },
-          localization: { locale: "pl-PL" },
-        });
-        chartRef.current = chart;
-        const series = chart.addSeries(BaselineSeries, {
-          baseValue: { type: "price", price: 0 },
-          topLineColor: "#047857",
-          topFillColor1: "rgba(4, 120, 87, 0.24)",
-          topFillColor2: "rgba(4, 120, 87, 0.03)",
-          bottomLineColor: "#b91c1c",
-          bottomFillColor1: "rgba(185, 28, 28, 0.03)",
-          bottomFillColor2: "rgba(185, 28, 28, 0.22)",
-          lineWidth: 3,
-          priceLineVisible: true,
-          priceLineColor: "#64748b",
-          priceLineWidth: 1,
+    void import("lightweight-charts").then(({ BaselineSeries, ColorType, CrosshairMode, LineSeries, createChart }) => {
+      if (disposed) return;
+      const chart = createChart(element, {
+        width: element.clientWidth,
+        height: 430,
+        autoSize: false,
+        layout: {
+          background: { type: ColorType.Solid, color: "transparent" },
+          textColor: "#64748b",
+          attributionLogo: false,
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+          fontSize: 13,
+        },
+        grid: {
+          vertLines: { color: "#f1f5f9" },
+          horzLines: { color: "#e2e8f0" },
+        },
+        crosshair: { mode: CrosshairMode.Normal },
+        rightPriceScale: { borderColor: "#cbd5e1", minimumWidth: 72, scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderColor: "#cbd5e1", timeVisible: false, rightOffset: 1, barSpacing: 6 },
+        localization: { locale: "pl-PL" },
+      });
+      chartRef.current = chart;
+      const series = chart.addSeries(BaselineSeries, {
+        baseValue: { type: "price", price: 0 },
+        topLineColor: "#047857",
+        topFillColor1: "rgba(4, 120, 87, 0.24)",
+        topFillColor2: "rgba(4, 120, 87, 0.03)",
+        bottomLineColor: "#b91c1c",
+        bottomFillColor1: "rgba(185, 28, 28, 0.03)",
+        bottomFillColor2: "rgba(185, 28, 28, 0.22)",
+        lineWidth: 3,
+        priceLineVisible: true,
+        priceLineColor: "#64748b",
+        priceLineWidth: 1,
+        lastValueVisible: true,
+        priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+      });
+      series.setData(
+        performance.map((point) => ({
+          time: toBusinessDay(point.date),
+          value: point.periodReturn,
+        })),
+      );
+      const benchmarkStart = performance.find((point) => point.benchmarkValue !== null)?.benchmarkValue ?? null;
+      if (benchmarkStart && showSp500) {
+        const benchmark = chart.addSeries(LineSeries, {
+          color: "#2563eb",
+          lineWidth: 2,
+          priceLineVisible: false,
           lastValueVisible: true,
           priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
         });
-        series.setData(
-          performance.map((point) => ({
-            time: toBusinessDay(point.date),
-            value: point.periodReturn,
-          })),
+        benchmark.setData(
+          performance.flatMap((point) =>
+            point.benchmarkValue === null
+              ? []
+              : [{ time: toBusinessDay(point.date), value: (point.benchmarkValue / benchmarkStart - 1) * 100 }],
+          ),
         );
-        const benchmarkStart = performance.find((point) => point.benchmarkValue !== null)?.benchmarkValue ?? null;
-        if (benchmarkStart && showSp500) {
-          const benchmark = chart.addSeries(LineSeries, {
-            color: "#2563eb",
-            lineWidth: 2,
-            lineStyle: LineStyle.Dashed,
-            priceLineVisible: false,
-            lastValueVisible: true,
-            priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
-          });
-          benchmark.setData(
-            performance.flatMap((point) =>
-              point.benchmarkValue === null
-                ? []
-                : [{ time: toBusinessDay(point.date), value: (point.benchmarkValue / benchmarkStart - 1) * 100 }],
-            ),
-          );
-        }
-        const msciWorldStart = performance.find((point) => point.msciWorldValue !== null)?.msciWorldValue ?? null;
-        if (msciWorldStart && showMsciWorld) {
-          const msciWorld = chart.addSeries(LineSeries, {
-            color: "#7c3aed",
-            lineWidth: 2,
-            lineStyle: LineStyle.Dotted,
-            priceLineVisible: false,
-            lastValueVisible: true,
-            priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
-          });
-          msciWorld.setData(
-            performance.flatMap((point) =>
-              point.msciWorldValue === null
-                ? []
-                : [{ time: toBusinessDay(point.date), value: (point.msciWorldValue / msciWorldStart - 1) * 100 }],
-            ),
-          );
-        }
-        chart.timeScale().fitContent();
-        const move = (event: MouseEventParams) => {
-          setSelectedDate(event.time ? dateFromTime(event.time) : null);
-        };
-        chart.subscribeCrosshairMove(move);
-        observer = new ResizeObserver(() => {
-          chart.applyOptions({ width: element.clientWidth });
+      }
+      const msciWorldStart = performance.find((point) => point.msciWorldValue !== null)?.msciWorldValue ?? null;
+      if (msciWorldStart && showMsciWorld) {
+        const msciWorld = chart.addSeries(LineSeries, {
+          color: "#7c3aed",
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: true,
+          priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
         });
-        observer.observe(element);
-      },
-    );
+        msciWorld.setData(
+          performance.flatMap((point) =>
+            point.msciWorldValue === null
+              ? []
+              : [{ time: toBusinessDay(point.date), value: (point.msciWorldValue / msciWorldStart - 1) * 100 }],
+          ),
+        );
+      }
+      chart.timeScale().fitContent();
+      const move = (event: MouseEventParams) => {
+        setSelectedDate(event.time ? dateFromTime(event.time) : null);
+      };
+      chart.subscribeCrosshairMove(move);
+      observer = new ResizeObserver(() => {
+        chart.applyOptions({ width: element.clientWidth });
+      });
+      observer.observe(element);
+    });
 
     return () => {
       disposed = true;
@@ -257,7 +253,7 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
                   }}
                   className="size-4 accent-blue-600"
                 />
-                <span className="h-0 w-5 border-t-2 border-dashed border-blue-600" /> S&amp;P 500 TR
+                <span className="h-0 w-5 border-t-2 border-blue-600" /> S&amp;P 500 TR
               </label>
               <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm font-medium text-violet-800 hover:bg-violet-50">
                 <input
@@ -268,7 +264,7 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
                   }}
                   className="size-4 accent-violet-600"
                 />
-                <span className="h-0 w-5 border-t-2 border-dotted border-violet-700" /> MSCI World
+                <span className="h-0 w-5 border-t-2 border-violet-700" /> MSCI World
               </label>
             </fieldset>
           </div>
