@@ -244,27 +244,27 @@ Przed wyłączeniem signup należy utworzyć konto właściciela i zachować jeg
 
 #### Automated
 
-- [x] 2.1 W kodzie nie pozostają trasy ani odnośniki rejestracji
-- [x] 2.2 Kontrola typów Astro przechodzi
-- [x] 2.3 Lint i build przechodzą
+- [x] 2.1 W kodzie nie pozostają trasy ani odnośniki rejestracji — 3741c99
+- [x] 2.2 Kontrola typów Astro przechodzi — 3741c99
+- [x] 2.3 Lint i build przechodzą — 3741c99
 
 #### Manual
 
-- [x] 2.4 Właściciel loguje się i trafia do dashboardu
-- [x] 2.5 Błędne dane i obce konto mają ten sam komunikat
-- [x] 2.6 Rejestracja zwraca 404, a wylogowanie kończy sesję
-- [x] 2.7 Interfejs działa na wąskim i szerokim ekranie
+- [x] 2.4 Właściciel loguje się i trafia do dashboardu — 3741c99
+- [x] 2.5 Błędne dane i obce konto mają ten sam komunikat — 3741c99
+- [x] 2.6 Rejestracja zwraca 404, a wylogowanie kończy sesję — 3741c99
+- [x] 2.7 Interfejs działa na wąskim i szerokim ekranie — 3741c99
 
 ### Phase 3: Weryfikacja i konfiguracja wdrożenia
 
 #### Automated
 
-- [ ] 3.1 Lokalna konfiguracja blokuje rejestrację
-- [ ] 3.2 Przykład środowiska zawiera komplet zmiennych bez sekretów
-- [ ] 3.3 Końcowe kontrole jakości przechodzą
+- [x] 3.1 Lokalna konfiguracja blokuje rejestrację
+- [x] 3.2 Przykład środowiska zawiera komplet zmiennych bez sekretów
+- [x] 3.3 Końcowe kontrole jakości przechodzą
 
 #### Manual
 
-- [ ] 3.4 Hostowany Supabase odrzuca publiczny signup
-- [ ] 3.5 Właściciel loguje się z dwóch urządzeń
-- [ ] 3.6 Bezpośredni URL nie omija ochrony prywatnego obszaru
+- [x] 3.4 Hostowany Supabase odrzuca publiczny signup
+- [x] 3.5 Właściciel loguje się z dwóch urządzeń
+- [x] 3.6 Bezpośredni URL nie omija ochrony prywatnego obszaru
