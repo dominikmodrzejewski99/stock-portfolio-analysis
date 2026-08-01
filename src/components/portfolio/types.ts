@@ -25,6 +25,11 @@ export interface PortfolioImportResult {
   plansCashValue: string;
   marginValue: string;
   totalValue: string;
+  depositedCapital: string;
+  withdrawnCapital: string;
+  netInvestedCapital: string;
+  totalProfit: string;
+  simpleReturn: string | null;
   xirr: string | null;
   diagnostics: ImportDiagnostic[];
   accounts: { currency: BaseCurrency; products: PortfolioProductResult[] }[];

@@ -42,36 +42,60 @@ export function PortfolioResult({ result }: { result: PortfolioImportResult }) {
         </p>
       </div>
 
-      <div className="border-b border-slate-200 py-8">
-        <p className="flex items-center gap-2 text-sm font-medium text-slate-600">
-          <WalletCards aria-hidden="true" className="size-4" /> Łączna wartość portfela
-        </p>
-        <p className="mt-2 text-4xl font-semibold tracking-tight text-slate-950 tabular-nums sm:text-5xl">
-          {money(result.totalValue, result.baseCurrency)}
-        </p>
+      <div className="grid gap-8 border-b border-slate-200 py-8 md:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)] md:items-end">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <WalletCards aria-hidden="true" className="size-4" /> Łączna wartość portfela
+          </p>
+          <p className="mt-2 text-4xl font-semibold tracking-tight text-slate-950 tabular-nums sm:text-5xl">
+            {money(result.totalValue, result.baseCurrency)}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-slate-600">Wynik całkowity</p>
+          <p
+            className={`mt-1 text-3xl font-semibold tracking-tight tabular-nums ${Number(result.totalProfit) >= 0 ? "text-emerald-700" : "text-red-700"}`}
+          >
+            {money(result.totalProfit, result.baseCurrency)}
+          </p>
+          <p className="mt-1 text-sm font-medium text-slate-600 tabular-nums">
+            {result.simpleReturn === null ? "Brak wyniku procentowego" : `${percent(result.simpleReturn)} od początku`}
+          </p>
+        </div>
       </div>
 
       <div className="border-b border-slate-200 py-8">
-        <h3 className="text-lg font-semibold text-slate-950">Wynik</h3>
-        <div className="mt-5">
-          <p className="text-sm text-slate-600">Zysk otwartych pozycji według raportu</p>
-          <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1">
-            {Object.entries(profitByCurrency).map(([currency, value]) => (
-              <span key={currency} className="text-2xl font-semibold text-emerald-700 tabular-nums">
-                {money(String(value), currency as BaseCurrency)}
-              </span>
-            ))}
+        <h3 className="text-lg font-semibold text-slate-950">Kapitał i stopa zwrotu</h3>
+        <div className="mt-5 grid gap-7 md:grid-cols-3">
+          <div>
+            <p className="text-sm text-slate-600">Wpłacony kapitał netto</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-950 tabular-nums">
+              {money(result.netInvestedCapital, result.baseCurrency)}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Wpłaty {money(result.depositedCapital, result.baseCurrency)}, wypłaty{" "}
+              {money(result.withdrawnCapital, result.baseCurrency)}.
+            </p>
           </div>
-        </div>
-
-        <div className="mt-7">
-          <p className="text-sm text-slate-600">Stopa zwrotu całego portfela od początku</p>
-          <p
-            className={`mt-1 text-2xl font-semibold tabular-nums ${hasBlockedResult ? "text-amber-800" : "text-indigo-800"}`}
-          >
-            {hasBlockedResult ? "Brak wyniku" : percent(result.xirr ?? "0")}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">Wynik roczny MWR/XIRR, uwzględnia daty wpłat i wypłat.</p>
+          <div>
+            <p className="text-sm text-slate-600">Stopa zwrotu od początku</p>
+            <p
+              className={`mt-1 text-2xl font-semibold tabular-nums ${hasBlockedResult ? "text-amber-800" : "text-indigo-800"}`}
+            >
+              {hasBlockedResult ? "Brak wyniku" : percent(result.xirr ?? "0")}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Roczny MWR/XIRR, uwzględnia daty przepływów.</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-600">Zysk otwartych pozycji w raporcie</p>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+              {Object.entries(profitByCurrency).map(([currency, value]) => (
+                <span key={currency} className="text-xl font-semibold text-slate-900 tabular-nums">
+                  {money(String(value), currency as BaseCurrency)}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

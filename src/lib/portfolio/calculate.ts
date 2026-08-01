@@ -15,6 +15,11 @@ export interface PortfolioCalculation {
   plansCashValue: Decimal;
   marginValue: Decimal;
   totalValue: Decimal;
+  depositedCapital: Decimal;
+  withdrawnCapital: Decimal;
+  netInvestedCapital: Decimal;
+  totalProfit: Decimal;
+  simpleReturn: Decimal | null;
   xirr: Decimal | null;
   cashFlows: MoneyCashFlow[];
   transferPairs: TransferPair[];
@@ -24,6 +29,16 @@ export interface PortfolioCalculation {
 
 function deduplicateQuotes(quotes: FxQuote[]): FxQuote[] {
   return [...new Map(quotes.map((quote) => [`${quote.currency}:${quote.requestedDate}`, quote])).values()];
+}
+
+export function calculateCapitalResult(deposits: Decimal, withdrawals: Decimal, currentValue: Decimal) {
+  const netInvestedCapital = deposits.minus(withdrawals);
+  const totalProfit = currentValue.minus(netInvestedCapital);
+  return {
+    netInvestedCapital,
+    totalProfit,
+    simpleReturn: netInvestedCapital.isPositive() ? totalProfit.dividedBy(netInvestedCapital) : null,
+  };
 }
 
 export async function calculatePortfolio(
@@ -67,10 +82,14 @@ export async function calculatePortfolio(
 
   const quoteAudit: FxQuote[] = [];
   const flowByDate = new Map<string, MoneyCashFlow>();
+  let depositedCapital = new Decimal(0);
+  let withdrawnCapital = new Decimal(0);
   for (const item of classified.filter((operation) => operation.classification === "external")) {
     const date = item.operation.occurredAt.slice(0, 10);
     const signedAmount = item.operation.amount.abs().times(item.cashFlowSign);
     const converted = await convertMoney(signedAmount, item.currency, baseCurrency, date, provider);
+    if (converted.amount.isNegative()) depositedCapital = depositedCapital.plus(converted.amount.abs());
+    else withdrawnCapital = withdrawnCapital.plus(converted.amount);
     quoteAudit.push(...converted.quotes);
     const existing = flowByDate.get(date);
     flowByDate.set(date, {
@@ -108,6 +127,11 @@ export async function calculatePortfolio(
     }
   }
   const totalValue = securitiesValue.plus(cashValue).plus(ikeCashValue).plus(plansCashValue).plus(marginValue);
+  const { netInvestedCapital, totalProfit, simpleReturn } = calculateCapitalResult(
+    depositedCapital,
+    withdrawnCapital,
+    totalValue,
+  );
   const endingFlow: MoneyCashFlow = { date: valuationDate, amount: totalValue, sourceOperationIds: [] };
   const cashFlows = [...flowByDate.values(), endingFlow].sort((left, right) => left.date.localeCompare(right.date));
 
@@ -130,6 +154,11 @@ export async function calculatePortfolio(
     plansCashValue,
     marginValue,
     totalValue,
+    depositedCapital,
+    withdrawnCapital,
+    netInvestedCapital,
+    totalProfit,
+    simpleReturn,
     xirr,
     cashFlows,
     transferPairs: transferResult.pairs,

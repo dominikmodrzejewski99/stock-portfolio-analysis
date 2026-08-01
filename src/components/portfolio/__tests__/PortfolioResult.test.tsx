@@ -13,6 +13,11 @@ const result: PortfolioImportResult = {
   plansCashValue: "0",
   marginValue: "0",
   totalValue: "22282.78",
+  depositedCapital: "20000",
+  withdrawnCapital: "0",
+  netInvestedCapital: "20000",
+  totalProfit: "2282.78",
+  simpleReturn: "0.114139",
   xirr: "0.1234",
   diagnostics: [],
   accounts: [

@@ -7,6 +7,7 @@ import { NbpClient } from "../nbp-client";
 import { pairTransfers } from "../transfers";
 import type { FxProvider, FxQuote, MoneyCashFlow } from "../types";
 import { calculateXirr, XirrError } from "../xirr";
+import { calculateCapitalResult } from "../calculate";
 
 function operation(overrides: Partial<XtbCashOperation>): XtbCashOperation {
   return {
@@ -188,5 +189,15 @@ describe("XIRR", () => {
       { date: "2025-01-01", amount: new Decimal(-132), sourceOperationIds: [] },
     ];
     expect(() => calculateXirr(flows)).toThrow("więcej niż jedno");
+  });
+});
+
+describe("capital result", () => {
+  it("shows net invested capital, total profit and simple return", () => {
+    const result = calculateCapitalResult(new Decimal(1200), new Decimal(200), new Decimal(1250));
+
+    expect(result.netInvestedCapital.toFixed(2)).toBe("1000.00");
+    expect(result.totalProfit.toFixed(2)).toBe("250.00");
+    expect(result.simpleReturn?.toFixed(4)).toBe("0.2500");
   });
 });

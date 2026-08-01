@@ -45,6 +45,11 @@ export const POST: APIRoute = async (context) => {
       plansCashValue: calculation.plansCashValue.toString(),
       marginValue: calculation.marginValue.toString(),
       totalValue: calculation.totalValue.toString(),
+      depositedCapital: calculation.depositedCapital.toString(),
+      withdrawnCapital: calculation.withdrawnCapital.toString(),
+      netInvestedCapital: calculation.netInvestedCapital.toString(),
+      totalProfit: calculation.totalProfit.toString(),
+      simpleReturn: calculation.simpleReturn?.toString() ?? null,
       xirr: calculation.xirr?.toString() ?? null,
       diagnostics: calculation.diagnostics,
       accounts: portfolio.accounts.map((account) => ({
