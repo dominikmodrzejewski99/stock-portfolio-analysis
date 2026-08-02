@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  BaselineSeries,
-  ColorType,
-  CrosshairMode,
-  LineSeries,
-  createChart,
-  type BusinessDay,
-  type IChartApi,
-  type MouseEventParams,
-  type Time,
-} from "lightweight-charts";
+import type { BusinessDay, IChartApi, MouseEventParams, Time } from "lightweight-charts";
 
 interface Point {
   date: string;
@@ -21,6 +11,7 @@ interface Point {
   nasdaq100Value: number | null;
   emergingMarketsValue: number | null;
   semiconductorValue: number | null;
+  inflationValue?: number | null;
 }
 interface PerformancePoint extends Point {
   periodProfit: number;
@@ -90,6 +81,7 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
   const [showNasdaq100, setShowNasdaq100] = useState(false);
   const [showEmergingMarkets, setShowEmergingMarkets] = useState(false);
   const [showSemiconductor, setShowSemiconductor] = useState(false);
+  const [showInflation, setShowInflation] = useState(true);
   const visible = useMemo(() => {
     const from = startDate(range, points.at(-1)?.date ?? "1970-01-01");
     return points.filter((point) => point.date >= from && point.netInvestedCapital !== 0);
@@ -103,7 +95,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
   const firstMsciWorld = performance.find((point) => point.msciWorldValue !== null)?.msciWorldValue ?? null;
   const activeMsciWorldReturn =
     active?.msciWorldValue != null && firstMsciWorld ? (active.msciWorldValue / firstMsciWorld - 1) * 100 : null;
-  const benchmarkReturn = (key: "nasdaq100Value" | "emergingMarketsValue" | "semiconductorValue") => {
+  const benchmarkReturn = (
+    key: "nasdaq100Value" | "emergingMarketsValue" | "semiconductorValue" | "inflationValue",
+  ) => {
     const start = performance.find((point) => point[key] !== null)?.[key];
     const current = active?.[key];
     return current != null && start ? (current / start - 1) * 100 : null;
@@ -111,122 +105,149 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
   const activeNasdaq100Return = benchmarkReturn("nasdaq100Value");
   const activeEmergingMarketsReturn = benchmarkReturn("emergingMarketsValue");
   const activeSemiconductorReturn = benchmarkReturn("semiconductorValue");
+  const firstInflation = points.find((point) => point.inflationValue != null)?.inflationValue ?? null;
+  const activeInflation =
+    active?.inflationValue != null && firstInflation != null && firstInflation !== 0
+      ? (active.inflationValue / firstInflation - 1) * 100
+      : null;
 
   useEffect(() => {
     const element = container.current;
     if (!element || performance.length < 2) return;
+    let disposed = false;
+    let observer: ResizeObserver | undefined;
 
-    const chart = createChart(element, {
-      width: element.clientWidth,
-      height: 430,
-      autoSize: false,
-      layout: {
-        background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "#64748b",
-        attributionLogo: false,
-        fontFamily: "ui-sans-serif, system-ui, sans-serif",
-        fontSize: 13,
-      },
-      grid: {
-        vertLines: { color: "#f1f5f9" },
-        horzLines: { color: "#e2e8f0" },
-      },
-      crosshair: { mode: CrosshairMode.Normal },
-      rightPriceScale: { borderColor: "#cbd5e1", minimumWidth: 72, scaleMargins: { top: 0.1, bottom: 0.1 } },
-      timeScale: { borderColor: "#cbd5e1", timeVisible: false, rightOffset: 1, barSpacing: 6 },
-      localization: { locale: "pl-PL" },
-    });
-    chartRef.current = chart;
-    const series = chart.addSeries(BaselineSeries, {
-      baseValue: { type: "price", price: 0 },
-      topLineColor: "#047857",
-      topFillColor1: "rgba(4, 120, 87, 0.24)",
-      topFillColor2: "rgba(4, 120, 87, 0.03)",
-      bottomLineColor: "#b91c1c",
-      bottomFillColor1: "rgba(185, 28, 28, 0.03)",
-      bottomFillColor2: "rgba(185, 28, 28, 0.22)",
-      lineWidth: 3,
-      priceLineVisible: true,
-      priceLineColor: "#64748b",
-      priceLineWidth: 1,
-      lastValueVisible: true,
-      priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
-    });
-    series.setData(
-      performance.map((point) => ({
-        time: toBusinessDay(point.date),
-        value: point.periodReturn,
-      })),
-    );
-    const benchmarkStart = performance.find((point) => point.benchmarkValue !== null)?.benchmarkValue ?? null;
-    if (benchmarkStart && showSp500) {
-      const benchmark = chart.addSeries(LineSeries, {
-        color: "#2563eb",
-        lineWidth: 2,
-        priceLineVisible: false,
+    void import("lightweight-charts").then(({ BaselineSeries, ColorType, CrosshairMode, LineSeries, createChart }) => {
+      if (disposed) return;
+      const chart = createChart(element, {
+        width: element.clientWidth,
+        height: 430,
+        autoSize: false,
+        layout: {
+          background: { type: ColorType.Solid, color: "transparent" },
+          textColor: "#64748b",
+          attributionLogo: false,
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+          fontSize: 13,
+        },
+        grid: {
+          vertLines: { color: "#f1f5f9" },
+          horzLines: { color: "#e2e8f0" },
+        },
+        crosshair: { mode: CrosshairMode.Normal },
+        rightPriceScale: { borderColor: "#cbd5e1", minimumWidth: 72, scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderColor: "#cbd5e1", timeVisible: false, rightOffset: 1, barSpacing: 6 },
+        localization: { locale: "pl-PL" },
+      });
+      chartRef.current = chart;
+      const series = chart.addSeries(BaselineSeries, {
+        baseValue: { type: "price", price: 0 },
+        topLineColor: "#047857",
+        topFillColor1: "rgba(4, 120, 87, 0.24)",
+        topFillColor2: "rgba(4, 120, 87, 0.03)",
+        bottomLineColor: "#b91c1c",
+        bottomFillColor1: "rgba(185, 28, 28, 0.03)",
+        bottomFillColor2: "rgba(185, 28, 28, 0.22)",
+        lineWidth: 3,
+        priceLineVisible: true,
+        priceLineColor: "#64748b",
+        priceLineWidth: 1,
         lastValueVisible: true,
         priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
       });
-      benchmark.setData(
-        performance.flatMap((point) =>
-          point.benchmarkValue === null
-            ? []
-            : [{ time: toBusinessDay(point.date), value: (point.benchmarkValue / benchmarkStart - 1) * 100 }],
-        ),
+      series.setData(
+        performance.map((point) => ({
+          time: toBusinessDay(point.date),
+          value: point.periodReturn,
+        })),
       );
-    }
-    const msciWorldStart = performance.find((point) => point.msciWorldValue !== null)?.msciWorldValue ?? null;
-    if (msciWorldStart && showMsciWorld) {
-      const msciWorld = chart.addSeries(LineSeries, {
-        color: "#7c3aed",
-        lineWidth: 2,
-        priceLineVisible: false,
-        lastValueVisible: true,
-        priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+      const benchmarkStart = performance.find((point) => point.benchmarkValue !== null)?.benchmarkValue ?? null;
+      if (benchmarkStart && showSp500) {
+        const benchmark = chart.addSeries(LineSeries, {
+          color: "#2563eb",
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: true,
+          priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+        });
+        benchmark.setData(
+          performance.flatMap((point) =>
+            point.benchmarkValue === null
+              ? []
+              : [{ time: toBusinessDay(point.date), value: (point.benchmarkValue / benchmarkStart - 1) * 100 }],
+          ),
+        );
+      }
+      const msciWorldStart = performance.find((point) => point.msciWorldValue !== null)?.msciWorldValue ?? null;
+      if (msciWorldStart && showMsciWorld) {
+        const msciWorld = chart.addSeries(LineSeries, {
+          color: "#7c3aed",
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: true,
+          priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+        });
+        msciWorld.setData(
+          performance.flatMap((point) =>
+            point.msciWorldValue === null
+              ? []
+              : [{ time: toBusinessDay(point.date), value: (point.msciWorldValue / msciWorldStart - 1) * 100 }],
+          ),
+        );
+      }
+      const addBenchmark = (key: "nasdaq100Value" | "emergingMarketsValue" | "semiconductorValue", color: string) => {
+        const start = performance.find((point) => point[key] !== null)?.[key];
+        if (!start) return;
+        const benchmark = chart.addSeries(LineSeries, {
+          color,
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: true,
+          priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+        });
+        benchmark.setData(
+          performance.flatMap((point) =>
+            point[key] === null ? [] : [{ time: toBusinessDay(point.date), value: (point[key] / start - 1) * 100 }],
+          ),
+        );
+      };
+      if (showNasdaq100) addBenchmark("nasdaq100Value", "#0891b2");
+      if (showEmergingMarkets) addBenchmark("emergingMarketsValue", "#b45309");
+      if (showSemiconductor) addBenchmark("semiconductorValue", "#be185d");
+      if (showInflation && firstInflation != null) {
+        const inflationSeries = chart.addSeries(LineSeries, {
+          color: "#78716c",
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: true,
+          priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
+        });
+        inflationSeries.setData(
+          performance.flatMap((point) =>
+            point.inflationValue == null
+              ? []
+              : [{ time: toBusinessDay(point.date), value: (point.inflationValue / firstInflation - 1) * 100 }],
+          ),
+        );
+      }
+      chart.timeScale().fitContent();
+      const move = (event: MouseEventParams) => {
+        setSelectedDate(event.time ? dateFromTime(event.time) : null);
+      };
+      chart.subscribeCrosshairMove(move);
+      observer = new ResizeObserver(() => {
+        chart.applyOptions({ width: element.clientWidth });
       });
-      msciWorld.setData(
-        performance.flatMap((point) =>
-          point.msciWorldValue === null
-            ? []
-            : [{ time: toBusinessDay(point.date), value: (point.msciWorldValue / msciWorldStart - 1) * 100 }],
-        ),
-      );
-    }
-    const addBenchmark = (key: "nasdaq100Value" | "emergingMarketsValue" | "semiconductorValue", color: string) => {
-      const start = performance.find((point) => point[key] !== null)?.[key];
-      if (!start) return;
-      const benchmark = chart.addSeries(LineSeries, {
-        color,
-        lineWidth: 2,
-        priceLineVisible: false,
-        lastValueVisible: true,
-        priceFormat: { type: "custom", formatter: (value: number) => percentage(value), minMove: 0.01 },
-      });
-      benchmark.setData(
-        performance.flatMap((point) =>
-          point[key] === null ? [] : [{ time: toBusinessDay(point.date), value: (point[key] / start - 1) * 100 }],
-        ),
-      );
-    };
-    if (showNasdaq100) addBenchmark("nasdaq100Value", "#0891b2");
-    if (showEmergingMarkets) addBenchmark("emergingMarketsValue", "#b45309");
-    if (showSemiconductor) addBenchmark("semiconductorValue", "#be185d");
-    chart.timeScale().fitContent();
-    const move = (event: MouseEventParams) => {
-      setSelectedDate(event.time ? dateFromTime(event.time) : null);
-    };
-    chart.subscribeCrosshairMove(move);
-    const observer = new ResizeObserver(() => {
-      chart.applyOptions({ width: element.clientWidth });
+      observer.observe(element);
     });
-    observer.observe(element);
 
     return () => {
-      observer.disconnect();
+      disposed = true;
+      observer?.disconnect();
       chartRef.current?.remove();
       chartRef.current = null;
     };
-  }, [performance, showEmergingMarkets, showMsciWorld, showNasdaq100, showSemiconductor, showSp500]);
+  }, [firstInflation, performance, showEmergingMarkets, showInflation, showMsciWorld, showNasdaq100, showSemiconductor, showSp500]);
 
   return (
     <section aria-labelledby="history-chart-title">
@@ -263,6 +284,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
               )}
               {showSemiconductor && activeSemiconductorReturn !== null && (
                 <p className="text-pink-700">Semiconductor: {percentage(activeSemiconductorReturn)}</p>
+              )}
+              {showInflation && activeInflation !== null && (
+                <p className="text-stone-700">Inflacja skumulowana: {percentage(activeInflation)}</p>
               )}
             </div>
           )}
@@ -345,6 +369,17 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
                 />
                 <span className="h-0 w-5 border-t-2 border-pink-700" /> Semiconductor
               </label>
+              <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm font-medium text-stone-700 hover:bg-stone-100">
+                <input
+                  type="checkbox"
+                  checked={showInflation}
+                  onChange={(event) => {
+                    setShowInflation(event.target.checked);
+                  }}
+                  className="size-4 accent-stone-600"
+                />
+                <span className="h-0 w-5 border-t-2 border-stone-500" /> Inflacja (GUS)
+              </label>
             </fieldset>
           </div>
           <div
@@ -363,8 +398,9 @@ export default function PortfolioHistoryChart({ points, currency }: { points: Po
             <span className="text-xs">Oś X: data · Oś Y: wynik procentowy</span>
           </div>
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            Wynik uwzględnia zmianę wartości portfela oraz wpłaty i wypłaty wykonane w wybranym okresie. MSCI World jest
-            reprezentowany przez akumulujący iShares Core MSCI World UCITS ETF w USD (IWDA).
+            Wynik uwzględnia zmianę wartości portfela oraz wpłaty i wypłaty wykonane w wybranym okresie. Inflacja to
+            skumulowany polski CPI GUS. MSCI World jest reprezentowany przez akumulujący iShares Core MSCI World UCITS
+            ETF w USD (IWDA).
           </p>
           <p className="mt-3 text-xs text-slate-500">
             Wykres wykorzystuje{" "}

@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import PortfolioHistoryChart from "@/components/portfolio/PortfolioHistoryChart";
+import { getPolishCpi } from "@/lib/portfolio/inflation";
 import { createClient } from "@/lib/supabase";
 import { YahooPriceClient, type DailyPrice } from "@/lib/portfolio/yahoo-client";
 import { ArrowLeft, History } from "lucide-react";
@@ -20,6 +21,7 @@ let msciWorldFallback: DailyPrice[] = [];
 let nasdaq100Fallback: DailyPrice[] = [];
 let emergingMarketsFallback: DailyPrice[] = [];
 let semiconductorFallback: DailyPrice[] = [];
+let inflation: { month: string; index: number }[] = [];
 const firstDate = rows[0]?.date == null ? null : String(rows[0].date);
 const lastDate = rows.at(-1)?.date == null ? null : String(rows.at(-1)?.date);
 if (
@@ -48,6 +50,9 @@ if (
   emergingMarketsFallback = emergingMarkets?.prices ?? [];
   semiconductorFallback = semiconductor?.prices ?? [];
 }
+if (firstDate && lastDate) {
+  inflation = await getPolishCpi().catch(() => []);
+}
 function priceOnOrBefore(prices: DailyPrice[], date: string): number | null {
   let value: number | null = null;
   for (const price of prices) {
@@ -56,6 +61,16 @@ function priceOnOrBefore(prices: DailyPrice[], date: string): number | null {
   }
   return value;
 }
+function inflationOnOrBefore(date: string): number | null {
+  let value: number | null = null;
+  const month = date.slice(0, 7);
+  for (const point of inflation) {
+    if (point.month > month) break;
+    value = point.index;
+  }
+  return value;
+}
+const inflationBaseline = firstDate == null ? null : inflationOnOrBefore(firstDate);
 const points = rows.map((row) => ({
   date: String(row.date),
   totalValue: Number(row.total_value),
@@ -75,6 +90,10 @@ const points = rows.map((row) => ({
     row.semiconductor_value == null
       ? priceOnOrBefore(semiconductorFallback, String(row.date))
       : Number(row.semiconductor_value),
+  inflationValue: (() => {
+    const value = inflationOnOrBefore(String(row.date));
+    return inflationBaseline != null && value != null ? (value / inflationBaseline) * 100 : null;
+  })(),
 }));
 const currency = String(data?.at(-1)?.base_currency ?? "PLN");
 ---
